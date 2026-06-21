@@ -1,0 +1,367 @@
+@page "/policy"
+@rendermode InteractiveServer
+@* Policy Page - Trang Chính Sách *@
+
+<PageTitle>Chính Sách - ProjectTrain</PageTitle>
+
+<div class="policy-page">
+    <!-- Header -->
+    <section class="policy-header">
+        <div class="header-content">
+            <h1>Chính Sách & Điều Khoản</h1>
+            <p>Cập nhật lần cuối: 01/06/2026</p>
+        </div>
+    </section>
+
+    <!-- Policy Content -->
+    <div class="policy-main">
+        <!-- Navigation -->
+        <div class="policy-nav">
+            <button class="policy-nav-btn @(activeSection == 0 ? "active" : "")" @onclick="() => activeSection = 0">
+                📋 Chính Sách Hoàn Vé
+            </button>
+            <button class="policy-nav-btn @(activeSection == 1 ? "active" : "")" @onclick="() => activeSection = 1">
+                📜 Điều Khoản Sử Dụng
+            </button>
+            <button class="policy-nav-btn @(activeSection == 2 ? "active" : "")" @onclick="() => activeSection = 2">
+                🔒 Chính Sách Bảo Mật
+            </button>
+        </div>
+
+        <!-- Content Sections -->
+        <div class="policy-content">
+            @if (activeSection == 0)
+            {
+                <div class="policy-section">
+                    <h2>📋 Chính Sách Hoàn Vé</h2>
+
+                    <div class="policy-block">
+                        <h3>1. Điều Kiện Hoàn Vé</h3>
+                        <ul>
+                            <li>Vé có thể được hoàn trước giờ khởi hành ít nhất <strong>24 giờ</strong>.</li>
+                            <li>Vé đã sử dụng hoặc qua giờ khởi hành sẽ <strong>không được hoàn</strong>.</li>
+                            <li>Vé khuyến mãi có thể không áp dụng chính sách hoàn vé thông thường.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>2. Phí Hoàn Vé</h3>
+                        <div class="table-wrapper">
+                            <table class="policy-table">
+                                <thead>
+                                    <tr>
+                                        <th>Thời Gian Hoàn</th>
+                                        <th>Phí Hoàn</th>
+                                        <th>Số Tiền Hoàn</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Trước 72 giờ</td>
+                                        <td>0%</td>
+                                        <td>100% giá vé</td>
+                                    </tr>
+                                    <tr>
+                                        <td>48 - 72 giờ</td>
+                                        <td>10%</td>
+                                        <td>90% giá vé</td>
+                                    </tr>
+                                    <tr>
+                                        <td>24 - 48 giờ</td>
+                                        <td>20%</td>
+                                        <td>80% giá vé</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Dưới 24 giờ</td>
+                                        <td>Không hoàn</td>
+                                        <td>0%</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>3. Quy Trình Hoàn Vé</h3>
+                        <ol>
+                            <li>Đăng nhập vào tài khoản tại <a href="/login">trang đăng nhập</a></li>
+                            <li>Vào mục <a href="/my-tickets">"Vé Của Tôi"</a></li>
+                            <li>Chọn vé cần hoàn và nhấn nút "Hủy Vé"</li>
+                            <li>Xác nhận hoàn vé</li>
+                            <li>Tiền sẽ được hoàn vào Ví Hệ Thống trong vòng <strong>24 giờ</strong></li>
+                        </ol>
+                    </div>
+                </div>
+            }
+            else if (activeSection == 1)
+            {
+                <div class="policy-section">
+                    <h2>📜 Điều Khoản Sử Dụng</h2>
+
+                    <div class="policy-block">
+                        <h3>1. Đăng Ký Tài Khoản</h3>
+                        <ul>
+                            <li>Người dùng phải cung cấp thông tin chính xác khi đăng ký tài khoản.</li>
+                            <li>Mỗi người chỉ được đăng ký <strong>một tài khoản</strong> duy nhất.</li>
+                            <li>Mật khẩu phải dài ít nhất <strong>6 ký tự</strong> và được bảo mật tuyệt đối.</li>
+                            <li>Người dùng chịu trách nhiệm bảo mật tài khoản của mình.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>2. Đặt Vé</h3>
+                        <ul>
+                            <li>Vé tàu chỉ có giá trị cho <strong>chuyến tàu và ghế đã chọn</strong>.</li>
+                            <li>Vé không được chuyển nhượng hoặc bán lại.</li>
+                            <li>Vé VIP có hệ số giá <strong>1.5 lần</strong> giá vé thường.</li>
+                            <li>Mỗi vé có <strong>mã vé duy nhất</strong> để tra cứu và xác minh.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>3. Thanh Toán</h3>
+                        <ul>
+                            <li>Hệ thống hỗ trợ các phương thức: <strong>Ví Hệ Thống, VNPay, Momo</strong>.</li>
+                            <li>Tiền sẽ bị trừ ngay khi xác nhận thanh toán.</li>
+                            <li>Mã khuyến mãi chỉ được sử dụng <strong>một lần</strong> và có thời hạn.</li>
+                            <li>Giao dịch sẽ được ghi nhận trong lịch sử tài khoản.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>4. Quyền Và Nghĩa Vụ</h3>
+                        <ul>
+                            <li>ProjectTrain có quyền từ chối phục vụ nếu phát hiện hành vi gian lận.</li>
+                            <li>Người dùng có quyền khiếu nại trong vòng <strong>30 ngày</strong> kể từ ngày giao dịch.</li>
+                            <li>ProjectTrain bảo lưu quyền thay đổi điều khoản bất kỳ lúc nào với thông báo trước.</li>
+                        </ul>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="policy-section">
+                    <h2>🔒 Chính Sách Bảo Mật</h2>
+
+                    <div class="policy-block">
+                        <h3>1. Thu Thập Thông Tin</h3>
+                        <ul>
+                            <li>Chúng tôi chỉ thu thập các thông tin cần thiết: <strong>họ tên, số điện thoại, tài khoản</strong>.</li>
+                            <li>Thông tin thanh toán được mã hóa và bảo mật.</li>
+                            <li>Chúng tôi <strong>không chia sẻ</strong> thông tin cá nhân với bên thứ ba không được phép.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>2. Sử Dụng Thông Tin</h3>
+                        <ul>
+                            <li>Thông tin được sử dụng để <strong>xử lý đặt vé, thông báo và hỗ trợ khách hàng</strong>.</li>
+                            <li>Lịch sử giao dịch được lưu giữ để phục vụ tra cứu và bảo mật.</li>
+                            <li>Hệ thống ghi nhận hoạt động (LichSuHeThong) để đảm bảo an toàn.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>3. Bảo Vệ Dữ Liệu</h3>
+                        <ul>
+                            <li>Mật khẩu được lưu trữ an toàn trong hệ thống.</li>
+                            <li>Mỗi phiên đăng nhập được quản lý độc lập (Scoped Service).</li>
+                            <li>Hệ thống tự động đăng xuất khi phát hiện hoạt động bất thường.</li>
+                            <li>Quản trị viên có <strong>mức cấp quyền</strong> khác nhau để hạn chế truy cập.</li>
+                        </ul>
+                    </div>
+
+                    <div class="policy-block">
+                        <h3>4. Quyền Của Người Dùng</h3>
+                        <ul>
+                            <li>Bạn có quyền <strong>cập nhật thông tin cá nhân</strong> bất kỳ lúc nào.</li>
+                            <li>Bạn có quyền yêu cầu <strong>xóa tài khoản</strong> và dữ liệu liên quan.</li>
+                            <li>Bạn có quyền <strong>xem lịch sử hoạt động</strong> của mình trên hệ thống.</li>
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private int activeSection = 0;
+}
+
+<style>
+    .policy-page {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding-bottom: 2rem;
+    }
+
+    .policy-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 3rem 1rem;
+        text-align: center;
+    }
+
+    .header-content h1 {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-content p {
+        opacity: 0.8;
+        font-size: 0.95rem;
+    }
+
+    .policy-main {
+        max-width: 1000px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+    }
+
+    /* Navigation */
+    .policy-nav {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .policy-nav-btn {
+        flex: 1;
+        background: white;
+        border: 2px solid #e0e0e0;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: #333;
+        min-width: 200px;
+        text-align: center;
+    }
+
+    .policy-nav-btn:hover {
+        border-color: #003d7a;
+        color: #003d7a;
+        transform: translateY(-2px);
+    }
+
+    .policy-nav-btn.active {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border-color: #003d7a;
+        box-shadow: 0 4px 12px rgba(0, 61, 122, 0.3);
+    }
+
+    /* Content */
+    .policy-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.1);
+        overflow: hidden;
+    }
+
+    .policy-section {
+        padding: 2.5rem;
+        animation: fadeIn 0.4s ease;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .policy-section h2 {
+        color: #003d7a;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .policy-block {
+        margin-bottom: 2rem;
+    }
+
+    .policy-block h3 {
+        color: #333;
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .policy-block ul, .policy-block ol {
+        padding-left: 1.5rem;
+        color: #555;
+        line-height: 2;
+    }
+
+    .policy-block li {
+        margin-bottom: 0.3rem;
+    }
+
+    .policy-block a {
+        color: #003d7a;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .policy-block a:hover {
+        text-decoration: underline;
+    }
+
+    /* Table */
+    .table-wrapper {
+        overflow-x: auto;
+    }
+
+    .policy-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 0.5rem;
+    }
+
+    .policy-table th, .policy-table td {
+        padding: 0.8rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .policy-table th {
+        background: #f0f5ff;
+        color: #003d7a;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .policy-table td {
+        font-size: 0.9rem;
+        color: #333;
+    }
+
+    .policy-table tbody tr:hover {
+        background: #f8f9fa;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .policy-nav {
+            flex-direction: column;
+        }
+
+        .policy-nav-btn {
+            min-width: auto;
+        }
+
+        .policy-section {
+            padding: 1.5rem;
+        }
+
+        .header-content h1 {
+            font-size: 1.6rem;
+        }
+    }
+</style>

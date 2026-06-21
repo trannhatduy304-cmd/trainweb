@@ -1,0 +1,240 @@
+@* TrainCard Component - The card hien thi thong tin chuyen tau *@
+
+<div class="train-card">
+    <div class="train-header">
+        <span class="train-code">@TrainCode</span>
+        <span class="train-type">@TrainType</span>
+    </div>
+
+    <div class="train-body">
+        <div class="journey-info">
+            <div class="station">
+                <div class="time">@DepartureTime</div>
+                <div class="station-name">@DepartureStation</div>
+            </div>
+
+            <div class="journey-duration">
+                <div class="duration-line"></div>
+                <div class="duration-text">@Duration</div>
+                <div class="stops">@StopsCount dừng</div>
+            </div>
+
+            <div class="station">
+                <div class="time">@ArrivalTime</div>
+                <div class="station-name">@ArrivalStation</div>
+            </div>
+        </div>
+
+        <div class="train-details">
+            <div class="detail-item">
+                <span class="detail-icon">🚂</span>
+                <span class="detail-text">Toa: @AvailableCoaches</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-icon">💺</span>
+                <span class="detail-text">Ghế: @AvailableSeats</span>
+            </div>
+            <div class="detail-item">
+                <span class="detail-icon">💰</span>
+                <span class="detail-text">Từ @MinPrice VND</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="train-footer">
+        <button class="btn-select" @onclick="OnSelect">Chọn Chuyến</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string TrainCode { get; set; } = "SE1";
+
+    [Parameter]
+    public string TrainType { get; set; } = "Express";
+
+    [Parameter]
+    public string DepartureStation { get; set; } = "Ha Noi";
+
+    [Parameter]
+    public string DepartureTime { get; set; } = "14:30";
+
+    [Parameter]
+    public string ArrivalStation { get; set; } = "TP. Ho Chi Minh";
+
+    [Parameter]
+    public string ArrivalTime { get; set; } = "08:50";
+
+    [Parameter]
+    public string Duration { get; set; } = "18h 20m";
+
+    [Parameter]
+    public int StopsCount { get; set; } = 5;
+
+    [Parameter]
+    public int AvailableCoaches { get; set; } = 12;
+
+    [Parameter]
+    public int AvailableSeats { get; set; } = 156;
+
+    [Parameter]
+    public string MinPrice { get; set; } = "350.000";
+
+    [Parameter]
+    public EventCallback OnSelect { get; set; }
+}
+
+<style>
+    .train-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.1);
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+
+    .train-card:hover {
+        box-shadow: 0 8px 24px rgba(0, 61, 122, 0.2);
+        transform: translateY(-4px);
+    }
+
+    .train-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .train-code {
+        font-weight: 700;
+        font-size: 1.3rem;
+    }
+
+    .train-type {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.4rem 0.8rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .train-body {
+        padding: 1.5rem;
+    }
+
+    .journey-info {
+        display: grid;
+        grid-template-columns: 120px 1fr 120px;
+        gap: 1.5rem;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .station {
+        text-align: center;
+    }
+
+    .time {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #003d7a;
+        margin-bottom: 0.4rem;
+    }
+
+    .station-name {
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .journey-duration {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .duration-line {
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #003d7a 0%, #0055aa 50%, #003d7a 100%);
+        border-radius: 2px;
+        margin-bottom: 0.8rem;
+    }
+
+    .duration-text {
+        font-size: 0.9rem;
+        color: #003d7a;
+        font-weight: 600;
+    }
+
+    .stops {
+        font-size: 0.8rem;
+        color: #999;
+    }
+
+    .train-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: #333;
+        font-size: 0.95rem;
+    }
+
+    .detail-icon {
+        font-size: 1.2rem;
+    }
+
+    .detail-text {
+        font-weight: 500;
+    }
+
+    .train-footer {
+        padding: 1.5rem;
+        background: #f8f9fa;
+        text-align: right;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .btn-select {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-select:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    @@media (max-width: 768px) {
+        .journey-info {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .time {
+            font-size: 1.2rem;
+        }
+
+        .train-details {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

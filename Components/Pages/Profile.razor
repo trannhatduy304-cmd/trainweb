@@ -1,0 +1,648 @@
+@page "/profile"
+@rendermode InteractiveServer
+@using ProjectTrainWeb.Models
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject NavigationManager NavigationManager
+
+<div class="profile-page">
+    @if (!BookingService.DaDangNhap || BookingService.HanhKhachHienTai == null)
+    {
+        <!-- Not Logged In -->
+        <div class="not-logged-in">
+            <div class="not-logged-in-card">
+                <div class="not-logged-in-icon">🔒</div>
+                <h2>Chưa Đăng Nhập</h2>
+                <p>Bạn cần đăng nhập để xem thông tin cá nhân.</p>
+                <a href="/login" class="btn-login-link">Đăng Nhập Ngay</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        var hanhKhach = BookingService.HanhKhachHienTai;
+        var myTickets = BookingService.LayVeCuaToi();
+        var activeTickets = myTickets.Where(v => v.TrangThai == "Dang Hoat Dong").ToList();
+        var totalSpent = myTickets.Where(v => v.TrangThai == "Dang Hoat Dong").Sum(v => v.TinhGiaVe());
+
+        <!-- Profile Header -->
+        <div class="profile-header">
+            <div class="profile-header-content">
+                <div class="profile-avatar">
+                    <span class="avatar-text">@(hanhKhach.HoTen.Length > 0 ? hanhKhach.HoTen[0].ToString().ToUpper() : "?")</span>
+                </div>
+                <div class="profile-header-info">
+                    <h1>@hanhKhach.HoTen</h1>
+                    <p class="profile-role">Hành Khách</p>
+                    <p class="profile-id">Mã người dùng: #@hanhKhach.MaNguoiDung</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">🎫</div>
+                    <div class="stat-info">
+                        <span class="stat-value">@myTickets.Count</span>
+                        <span class="stat-label">Tổng Vé Đã Đặt</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <span class="stat-value">@totalSpent.ToString("N0")</span>
+                        <span class="stat-label">Tổng Chi Tiêu (VND)</span>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-value">@activeTickets.Count</span>
+                        <span class="stat-label">Vé Đang Hoạt Động</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Info Section -->
+        <div class="profile-info-section">
+            <div class="profile-info-card">
+                <div class="card-header">
+                    <h2>Thông Tin Cá Nhân</h2>
+                    <button class="btn-edit" @onclick="ToggleEditMode">
+                        @if (isEditing)
+                        {
+                            <span>✕ Hủy</span>
+                        }
+                        else
+                        {
+                            <span>✏️ Chỉnh Sửa</span>
+                        }
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrEmpty(message))
+                {
+                    <div class="alert @(isSuccess ? "alert-success" : "alert-error")">
+                        @message
+                    </div>
+                }
+
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Họ và Tên</span>
+                        @if (isEditing)
+                        {
+                            <input type="text" class="info-input" @bind="editHoTen" placeholder="Nhập họ tên" />
+                        }
+                        else
+                        {
+                            <span class="info-value">@hanhKhach.HoTen</span>
+                        }
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Tài Khoản</span>
+                        <span class="info-value">@hanhKhach.TaiKhoan</span>
+                    </div>
+
+                    <div class="info-item">
+                        <span class="info-label">Số Điện Thoại</span>
+                        @if (isEditing)
+                        {
+                            <input type="tel" class="info-input" @bind="editSoDienThoai" placeholder="Nhập số điện thoại" />
+                        }
+                        else
+                        {
+                            <span class="info-value">@(string.IsNullOrEmpty(hanhKhach.SoDienThoai) ? "Chưa cập nhật" : hanhKhach.SoDienThoai)</span>
+                        }
+                    </div>
+
+
+
+                    <div class="info-item">
+                        <span class="info-label">Mã Người Dùng</span>
+                        <span class="info-value">#@hanhKhach.MaNguoiDung</span>
+                    </div>
+                </div>
+
+                @if (isEditing)
+                {
+                    <div class="edit-actions">
+                        <button class="btn-save" @onclick="SaveChanges">
+                            💾 Lưu Thay Đổi
+                        </button>
+                        <button class="btn-cancel" @onclick="ToggleEditMode">
+                            Hủy Bỏ
+                        </button>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions-section">
+            <div class="quick-actions-card">
+                <h2>Thao Tác Nhanh</h2>
+                <div class="actions-grid">
+                    <a href="/my-tickets" class="action-item">
+                        <span class="action-icon">🎫</span>
+                        <span class="action-text">Vé Của Tôi</span>
+                    </a>
+                    <a href="/activity-history" class="action-item">
+                        <span class="action-icon">📋</span>
+                        <span class="action-text">Lịch Sử Hoạt Động</span>
+                    </a>
+                    <a href="/notifications" class="action-item">
+                        <span class="action-icon">🔔</span>
+                        <span class="action-text">Thông Báo</span>
+                    </a>
+                    <a href="/train-list" class="action-item">
+                        <span class="action-icon">🚂</span>
+                        <span class="action-text">Đặt Vé Mới</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isEditing = false;
+    private string editHoTen = "";
+    private string editSoDienThoai = "";
+    private string message = "";
+    private bool isSuccess = false;
+
+    private void ToggleEditMode()
+    {
+        isEditing = !isEditing;
+        message = "";
+        if (isEditing && BookingService.HanhKhachHienTai != null)
+        {
+            editHoTen = BookingService.HanhKhachHienTai.HoTen;
+            editSoDienThoai = BookingService.HanhKhachHienTai.SoDienThoai;
+        }
+    }
+
+    private void SaveChanges()
+    {
+        if (BookingService.HanhKhachHienTai == null) return;
+
+        if (string.IsNullOrWhiteSpace(editHoTen))
+        {
+            message = "Họ tên không được để trống!";
+            isSuccess = false;
+            return;
+        }
+
+        BookingService.HanhKhachHienTai.HoTen = editHoTen.Trim();
+        BookingService.HanhKhachHienTai.SoDienThoai = editSoDienThoai?.Trim() ?? "";
+        
+        BookingService.GhiLichSu("Cap Nhat", BookingService.HanhKhachHienTai.HoTen, 
+            "Cập nhật thông tin cá nhân");
+
+        message = "Cập nhật thông tin thành công!";
+        isSuccess = true;
+        isEditing = false;
+    }
+}
+
+<style>
+    .profile-page {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding-bottom: 2rem;
+    }
+
+    /* Not Logged In */
+    .not-logged-in {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 70vh;
+        padding: 2rem;
+    }
+
+    .not-logged-in-card {
+        background: white;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0, 61, 122, 0.1);
+        max-width: 450px;
+        width: 100%;
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    .not-logged-in-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .not-logged-in-card h2 {
+        color: #003d7a;
+        margin-bottom: 0.8rem;
+        font-size: 1.6rem;
+    }
+
+    .not-logged-in-card p {
+        color: #666;
+        margin-bottom: 1.5rem;
+        font-size: 1rem;
+    }
+
+    .btn-login-link {
+        display: inline-block;
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        padding: 0.8rem 2rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-login-link:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+        color: white;
+    }
+
+    /* Profile Header */
+    .profile-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        padding: 3rem 2rem;
+        color: white;
+    }
+
+    .profile-header-content {
+        max-width: 1000px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        animation: slideDown 0.6s ease-out;
+    }
+
+    .profile-avatar {
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 3px solid rgba(255, 255, 255, 0.5);
+        flex-shrink: 0;
+    }
+
+    .avatar-text {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: white;
+    }
+
+    .profile-header-info h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+
+    .profile-role {
+        font-size: 1rem;
+        opacity: 0.9;
+        margin-bottom: 0.2rem;
+    }
+
+    .profile-id {
+        font-size: 0.85rem;
+        opacity: 0.7;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        max-width: 1000px;
+        margin: -2rem auto 2rem;
+        padding: 0 1rem;
+        position: relative;
+        z-index: 10;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0, 61, 122, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+        animation: slideUp 0.6s ease-out;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 61, 122, 0.15);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        flex-shrink: 0;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+        font-weight: 700;
+        color: #003d7a;
+    }
+
+    .stat-label {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0.2rem;
+    }
+
+    /* Profile Info Section */
+    .profile-info-section {
+        max-width: 1000px;
+        margin: 0 auto 2rem;
+        padding: 0 1rem;
+    }
+
+    .profile-info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.1);
+        animation: fadeIn 0.6s ease-out;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .card-header h2 {
+        color: #003d7a;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .btn-edit {
+        background: transparent;
+        border: 2px solid #003d7a;
+        color: #003d7a;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+    }
+
+    .btn-edit:hover {
+        background: #003d7a;
+        color: white;
+    }
+
+    .alert {
+        padding: 0.8rem 1.2rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+
+    .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .info-label {
+        font-size: 0.85rem;
+        color: #888;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        font-size: 1.05rem;
+        color: #333;
+        font-weight: 500;
+    }
+
+    .info-value.balance {
+        color: #28a745;
+        font-weight: 700;
+        font-size: 1.15rem;
+    }
+
+    .info-input {
+        padding: 0.7rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .info-input:focus {
+        outline: none;
+        border-color: #003d7a;
+        background: #f0f5ff;
+        box-shadow: 0 0 8px rgba(0, 61, 122, 0.2);
+    }
+
+    .edit-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .btn-save:hover {
+        background: linear-gradient(135deg, #002d5a 0%, #003d7a 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    .btn-cancel {
+        background: transparent;
+        border: 2px solid #dc3545;
+        color: #dc3545;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.95rem;
+    }
+
+    .btn-cancel:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    /* Quick Actions */
+    .quick-actions-section {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .quick-actions-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.1);
+    }
+
+    .quick-actions-card h2 {
+        color: #003d7a;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+    }
+
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .action-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.8rem;
+        padding: 1.5rem 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .action-item:hover {
+        border-color: #003d7a;
+        background: #f0f5ff;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0, 61, 122, 0.12);
+    }
+
+    .action-icon {
+        font-size: 2rem;
+    }
+
+    .action-text {
+        color: #003d7a;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* Animations */
+    @@keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @@keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @@keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .profile-header-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .profile-header-info h1 {
+            font-size: 1.5rem;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .edit-actions {
+            flex-direction: column;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

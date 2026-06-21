@@ -1,0 +1,644 @@
+@page "/"
+@* Home Page - Trang Chủ và Tìm Kiếm Chuyến Tàu *@
+@rendermode InteractiveServer
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject NavigationManager NavigationManager
+
+<div class="home-page">
+    <!-- Hero Banner Section -->
+    <section class="hero-banner">
+        <div class="hero-background">
+            <div class="hero-overlay"></div>
+        </div>
+        
+        <div class="hero-content">
+            <h1 class="hero-title">Đặt Vé Tàu Hợp Lý, Dưỡng Sức Tới Đích</h1>
+            <p class="hero-subtitle">Thoát khỏi lo lắng, hãy tin tưởng ProjectTrain</p>
+        </div>
+    </section>
+
+    <!-- Search Form Section -->
+    <section class="search-section">
+        <div class="search-container">
+            <div class="search-card">
+                <h2>Tìm Chuyến Tàu</h2>
+
+                <div class="search-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ga Đi</label>
+                            <select class="form-input" @bind="selectedGaDi">
+                                <option value="0">Chọn ga đi</option>
+                                @foreach (var ga in BookingService.DanhSachGa)
+                                {
+                                    <option value="@ga.MaGa">@ga.TenGa (@ga.ThanhPho)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ga Đến</label>
+                            <select class="form-input" @bind="selectedGaDen">
+                                <option value="0">Chọn ga đến</option>
+                                @foreach (var ga in BookingService.DanhSachGa)
+                                {
+                                    <option value="@ga.MaGa">@ga.TenGa (@ga.ThanhPho)</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ngày Đi</label>
+                            <input type="date" class="form-input" @bind="ngayDi" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Số Hành Khách</label>
+                            <input type="number" class="form-input" min="1" max="10" @bind="soHanhKhach" />
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Loại Ghế</label>
+                            <select class="form-input" @bind="loaiGhe">
+                                <option value="all">Tất Cả</option>
+                                <option value="ordinary">Thường</option>
+                                <option value="vip">VIP</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>&nbsp;</label>
+                            <button type="button" class="btn-search" @onclick="TimVeNgay">
+                                <span class="search-icon">🔍</span>
+                                <span>Tìm Vé Ngay</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section">
+        <div class="features-container">
+            <h2 class="section-title">Tại Sao Chọn ProjectTrain?</h2>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">✈️</div>
+                    <h3>Nhanh Chóng</h3>
+                    <p>Đặt vé trong chiếc tay với chỉ trên 2 phút, không cần cảnh bước đến văn phòng.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <h3>An Toàn</h3>
+                    <p>Dữ liệu cá nhân được bảo vệ tuyệt đối với công nghệ mã hóa hợp nhất.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">💰</div>
+                    <h3>Giá Rẻ</h3>
+                    <p>So sánh giá từ nhiều hãng tàu, tìm giá tốt nhất và khuyến mãi hấp dẫn.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🎫</div>
+                    <h3>E-Ticket</h3>
+                    <p>Nhận mã QR tức thời, không cần in ấy, đặt chỉ dùng điện thoại là đủ.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📞</div>
+                    <h3>Hỗ Trợ 24/7</h3>
+                    <p>Đội ngũ chăm sóc khách hàng sẵn sàng giúp đỡ tại bất kỳ lúc nào.</p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h3>Hoàn Tiền Dễ</h3>
+                    <p>Hủy vé bất kỳ lúc nào, hoàn tiền trong vòng 24 giờ, không câu hỏi.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Promo Section -->
+    <section class="promo-section">
+        <div class="promo-container">
+            <div class="promo-card">
+                <h3>Ưu Đãi Lần Đầu Đặt Vé</h3>
+                <p>Giảm <span class="promo-discount">20%</span> cho các hành khách mới</p>
+                <p class="promo-code">Mã: NEWTRAVEL2026</p>
+                <button class="btn-promo" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Đặt Vé Ngay</button>
+            </div>
+
+            <div class="promo-card">
+                <h3>Thành Viên Trở Lại</h3>
+                <p>Nhận <span class="promo-discount">100 Điểm</span> mỗi chuyến</p>
+                <p class="promo-code">Tích lũy điểm và đổi quà</p>
+                <button class="btn-promo" @onclick='() => NavigationManager.NavigateTo("/register")'>Tham Gia Ngay</button>
+            </div>
+
+            <div class="promo-card">
+                <h3>Đặt Hàng Loạt</h3>
+                <p>Giảm <span class="promo-discount">15%</span> cho nhóm 10+ người</p>
+                <p class="promo-code">Liên hệ: group@projecttrain.com</p>
+                <button class="btn-promo" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Liên Hệ</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Popular Routes Section -->
+    <section class="popular-routes-section">
+        <div class="routes-container">
+            <h2 class="section-title">Tuyến Đường Phổ Biến</h2>
+
+            <div class="routes-grid">
+                <div class="route-card">
+                    <div class="route-header">Hà Nội - TP. Hồ Chí Minh</div>
+                    <div class="route-body">
+                        <p class="route-info"><strong>32+ Chuyến/Ngày</strong></p>
+                        <p class="route-price">Từ 350.000 VND</p>
+                        <button class="btn-route" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Xem Chi Tiết</button>
+                    </div>
+                </div>
+
+                <div class="route-card">
+                    <div class="route-header">Hà Nội - Hải Phòng</div>
+                    <div class="route-body">
+                        <p class="route-info"><strong>15+ Chuyến/Ngày</strong></p>
+                        <p class="route-price">Từ 150.000 VND</p>
+                        <button class="btn-route" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Xem Chi Tiết</button>
+                    </div>
+                </div>
+
+                <div class="route-card">
+                    <div class="route-header">TP. Hồ Chí Minh - Cần Thơ</div>
+                    <div class="route-body">
+                        <p class="route-info"><strong>20+ Chuyến/Ngày</strong></p>
+                        <p class="route-price">Từ 200.000 VND</p>
+                        <button class="btn-route" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Xem Chi Tiết</button>
+                    </div>
+                </div>
+
+                <div class="route-card">
+                    <div class="route-header">Hà Nội - Đà Nẵng</div>
+                    <div class="route-body">
+                        <p class="route-info"><strong>18+ Chuyến/Ngày</strong></p>
+                        <p class="route-price">Từ 280.000 VND</p>
+                        <button class="btn-route" @onclick='() => NavigationManager.NavigateTo("/search-trains")'>Xem Chi Tiết</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@code {
+    private int selectedGaDi = 0;
+    private int selectedGaDen = 0;
+    private DateTime ngayDi = DateTime.Now;
+    private int soHanhKhach = 1;
+    private string loaiGhe = "all";
+
+    private void TimVeNgay()
+    {
+        // Navigate to search-trains page
+        NavigationManager.NavigateTo("/search-trains");
+    }
+}
+
+<style>
+    .home-page {
+        background: #f8f9fa;
+    }
+
+    /* Hero Banner */
+    .hero-banner {
+        position: relative;
+        height: 400px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        margin-bottom: 3rem;
+        overflow: hidden;
+    }
+
+    .hero-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 50%, #0077cc 100%);
+        z-index: -1;
+    }
+
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><path d="M0,200 Q300,100 600,200 T1200,200 L1200,400 L0,400 Z" fill="rgba(255,255,255,0.1)"/></svg>');
+        background-size: cover;
+        z-index: -1;
+    }
+
+    .hero-content {
+        text-align: center;
+        z-index: 1;
+        animation: slideDown 0.8s ease-out;
+    }
+
+    @@keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .hero-title {
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .hero-subtitle {
+        font-size: 1.3rem;
+        font-weight: 300;
+        opacity: 0.95;
+    }
+
+    @@media (max-width: 768px) {
+        .hero-banner {
+            height: 300px;
+        }
+
+        .hero-title {
+            font-size: 1.8rem;
+        }
+
+        .hero-subtitle {
+            font-size: 1rem;
+        }
+    }
+
+    /* Search Section */
+    .search-section {
+        background: white;
+        margin-bottom: 3rem;
+        padding-bottom: 3rem;
+    }
+
+    .search-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        transform: translateY(-100px);
+        position: relative;
+        z-index: 10;
+    }
+
+    .search-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 8px 32px rgba(0, 61, 122, 0.15);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(0, 61, 122, 0.1);
+        animation: slideUp 0.8s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .search-card h2 {
+        color: #003d7a;
+        margin-bottom: 1.5rem;
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+
+    .search-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group label {
+        color: #333;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
+    }
+
+    .form-input {
+        padding: 0.8rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: #003d7a;
+        background: #f0f5ff;
+        box-shadow: 0 0 8px rgba(0, 61, 122, 0.2);
+    }
+
+    .btn-search {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        height: 45px;
+    }
+
+    .btn-search:hover {
+        background: linear-gradient(135deg, #002d5a 0%, #003d7a 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    .search-icon {
+        font-size: 1.1rem;
+    }
+
+    @@media (max-width: 768px) {
+        .search-container {
+            transform: translateY(-50px);
+        }
+
+        .search-card {
+            padding: 1.5rem;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+    }
+
+    /* Features Section */
+    .features-section {
+        padding: 4rem 1rem;
+        background: white;
+    }
+
+    .features-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .section-title {
+        text-align: center;
+        color: #003d7a;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 3rem;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+    }
+
+    .feature-card {
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        text-align: center;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .feature-card:hover {
+        border-color: #003d7a;
+        transform: translateY(-8px);
+        box-shadow: 0 12px 24px rgba(0, 61, 122, 0.15);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        display: inline-block;
+    }
+
+    .feature-card h3 {
+        color: #003d7a;
+        margin-bottom: 0.8rem;
+        font-size: 1.2rem;
+    }
+
+    .feature-card p {
+        color: #666;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    /* Promo Section */
+    .promo-section {
+        padding: 4rem 1rem;
+        background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
+    }
+
+    .promo-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 2rem;
+    }
+
+    .promo-card {
+        background: white;
+        padding: 2rem;
+        border-radius: 12px;
+        text-align: center;
+        border-left: 4px solid #003d7a;
+        box-shadow: 0 4px 16px rgba(0, 61, 122, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .promo-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 61, 122, 0.2);
+    }
+
+    .promo-card h3 {
+        color: #003d7a;
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .promo-card p {
+        color: #666;
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .promo-discount {
+        color: #ff4444;
+        font-weight: 700;
+        font-size: 1.3rem;
+    }
+
+    .promo-code {
+        font-family: 'Courier New', monospace;
+        background: #f0f0f0;
+        padding: 0.5rem;
+        border-radius: 4px;
+        color: #003d7a;
+        font-weight: 600;
+        margin: 1rem 0 !important;
+    }
+
+    .btn-promo {
+        background: #003d7a;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 1rem;
+    }
+
+    .btn-promo:hover {
+        background: #0055aa;
+        transform: scale(1.05);
+    }
+
+    /* Popular Routes Section */
+    .popular-routes-section {
+        padding: 4rem 1rem;
+        background: white;
+    }
+
+    .routes-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .routes-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 2rem;
+    }
+
+    .route-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: 1px solid #e0e0e0;
+    }
+
+    .route-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 24px rgba(0, 61, 122, 0.2);
+    }
+
+    .route-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 1.2rem;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .route-body {
+        padding: 1.5rem;
+        text-align: center;
+    }
+
+    .route-info {
+        color: #333;
+        margin: 0.5rem 0;
+        font-size: 0.95rem;
+    }
+
+    .route-price {
+        color: #ff4444;
+        font-weight: 700;
+        margin: 0.8rem 0;
+        font-size: 1.2rem;
+    }
+
+    .btn-route {
+        background: #003d7a;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        width: 100%;
+    }
+
+    .btn-route:hover {
+        background: #0055aa;
+    }
+
+    @@media (max-width: 768px) {
+        .hero-title {
+            font-size: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+        }
+
+        .features-grid,
+        .routes-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

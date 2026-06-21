@@ -1,0 +1,491 @@
+@page "/search-trains"
+@* Train List Page - Danh Sách Chuyến Tàu *@
+@rendermode InteractiveServer
+@using ProjectTrainWeb.Models
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject NavigationManager NavigationManager
+
+<div class="train-list-page">
+    <!-- Header -->
+    <section class="train-list-header">
+        <div class="header-container">
+            <div class="search-summary">
+                <h1>Kết Quả Tìm Kiếm</h1>
+                <p>@danhSachChuyenTau.Count chuyến tàu có sẵn</p>
+            </div>
+            <button class="btn-modify-search" @onclick='() => NavigationManager.NavigateTo("/")'>← Thay Đổi Tìm Kiếm</button>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="train-list-main">
+        <!-- Sidebar: Filters -->
+        <aside class="filter-sidebar">
+            <div class="filter-card">
+                <h3>Lọc Kết Quả</h3>
+
+                <!-- Time Filter -->
+                <div class="filter-group">
+                    <h4>Khung Giờ Khởi Hành</h4>
+                    <div class="filter-options">
+                        <label class="filter-option">
+                            <input type="checkbox" checked="@selectedTimeSlots.Contains("morning")" @onchange='e => FilterByTime("morning")'>
+                            <span>Sáng (00:00 - 06:00)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" checked="@selectedTimeSlots.Contains("afternoon")" @onchange='e => FilterByTime("afternoon")'>
+                            <span>Chiều (06:00 - 12:00)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" checked="@selectedTimeSlots.Contains("evening")" @onchange='e => FilterByTime("evening")'>
+                            <span>Tối (12:00 - 18:00)</span>
+                        </label>
+                        <label class="filter-option">
+                            <input type="checkbox" checked="@selectedTimeSlots.Contains("night")" @onchange='e => FilterByTime("night")'>
+                            <span>Đêm (18:00 - 24:00)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Filter Buttons -->
+                <div class="filter-actions">
+                    <button class="btn-apply-filter" @onclick="ApplyFilter">Áp Dụng</button>
+                    <button class="btn-reset-filter" @onclick="ResetFilter">Đặt Lại</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Train List Section -->
+        <section class="train-list-section">
+            <!-- Sort Options -->
+            <div class="sort-bar">
+                <span class="result-count">Hiển thị @danhSachChuyenTau.Count chuyến tàu</span>
+                <div class="sort-options">
+                    <button class="sort-btn @(currentSort == "departure" ? "active" : "")" @onclick='() => SortBy("departure")'>
+                        <span class="sort-icon">⏰</span>
+                        <span>Giờ Khởi Hành</span>
+                    </button>
+                    <button class="sort-btn @(currentSort == "price" ? "active" : "")" @onclick='() => SortBy("price")'>
+                        <span class="sort-icon">💰</span>
+                        <span>Giá Tiền</span>
+                    </button>
+                    <button class="sort-btn @(currentSort == "duration" ? "active" : "")" @onclick='() => SortBy("duration")'>
+                        <span class="sort-icon">⏱️</span>
+                        <span>Thời Gian Hành Trình</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Train Cards List -->
+            <div class="train-cards-container">
+                @foreach (var chuyen in danhSachChuyenTau)
+                {
+                    var tongGhe = chuyen.DanhSachToa.Sum(t => t.DanhSachGhe.Count);
+                    var gheTrong = chuyen.DanhSachToa.Sum(t => t.DemGheTrong());
+                    var giaMin = chuyen.DanhSachToa.Min(t => t.GiaCoBan);
+                    var thoiGian = (chuyen.ThoiGianDenDu - chuyen.ThoiGianKhoiHanh);
+                    <TrainCard 
+                        TrainCode="@($"SE{chuyen.MaChuyen}")"
+                        TrainType="@(chuyen.DanhSachToa.Any(t => t.LoaiToa == "VIP") ? "Premium" : "Express")"
+                        DepartureStation="@(chuyen.GaDi?.TenGa ?? "N/A")"
+                        DepartureTime="@chuyen.ThoiGianKhoiHanh.ToString("HH:mm")"
+                        ArrivalStation="@(chuyen.GaDen?.TenGa ?? "N/A")"
+                        ArrivalTime="@chuyen.ThoiGianDenDu.ToString("HH:mm")"
+                        Duration="@($"{(int)thoiGian.TotalHours}h {thoiGian.Minutes}m")"
+                        StopsCount="@chuyen.DanhSachToa.Count"
+                        AvailableCoaches="@chuyen.DanhSachToa.Count"
+                        AvailableSeats="@gheTrong"
+                        MinPrice="@($"{giaMin:N0}")"
+                        OnSelect="@(() => SelectTrain(chuyen.MaChuyen))" />
+                }
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="pagination-btn" disabled>← Trước</button>
+                <button class="pagination-btn active">1</button>
+                <button class="pagination-btn">2</button>
+                <button class="pagination-btn">3</button>
+                <span class="pagination-dots">...</span>
+                <button class="pagination-btn">10</button>
+                <button class="pagination-btn">Sau →</button>
+            </div>
+        </section>
+    </div>
+</div>
+
+@code {
+    private List<ChuyenTau> danhSachChuyenTau = new();
+    private HashSet<string> selectedTimeSlots = new() { "morning", "afternoon", "evening", "night" };
+    private List<ChuyenTau> allChuyenTau = new();
+    private string currentSort = "departure";
+
+    protected override void OnInitialized()
+    {
+        allChuyenTau = BookingService.DanhSachChuyenTau.Where(ct => ct.ConHopLe()).ToList();
+        danhSachChuyenTau = allChuyenTau.ToList();
+    }
+
+    private void FilterByTime(string time)
+    {
+        if (selectedTimeSlots.Contains(time))
+            selectedTimeSlots.Remove(time);
+        else
+            selectedTimeSlots.Add(time);
+    }
+
+    private void ApplyFilter()
+    {
+        danhSachChuyenTau = allChuyenTau.Where(ct =>
+        {
+            int hour = ct.ThoiGianKhoiHanh.Hour;
+            if (hour >= 0 && hour < 6 && selectedTimeSlots.Contains("morning")) return true;
+            if (hour >= 6 && hour < 12 && selectedTimeSlots.Contains("afternoon")) return true;
+            if (hour >= 12 && hour < 18 && selectedTimeSlots.Contains("evening")) return true;
+            if (hour >= 18 && hour < 24 && selectedTimeSlots.Contains("night")) return true;
+            return false;
+        }).ToList();
+    }
+
+    private void ResetFilter()
+    {
+        selectedTimeSlots = new() { "morning", "afternoon", "evening", "night" };
+        danhSachChuyenTau = allChuyenTau.ToList();
+    }
+
+    private void SortBy(string sortType)
+    {
+        currentSort = sortType;
+        danhSachChuyenTau = sortType switch
+        {
+            "departure" => danhSachChuyenTau.OrderBy(ct => ct.ThoiGianKhoiHanh).ToList(),
+            "price" => danhSachChuyenTau.OrderBy(ct => ct.DanhSachToa.Min(t => t.GiaCoBan)).ToList(),
+            "duration" => danhSachChuyenTau.OrderBy(ct => ct.ThoiGianDenDu - ct.ThoiGianKhoiHanh).ToList(),
+            _ => danhSachChuyenTau
+        };
+    }
+
+    private void SelectTrain(int maChuyen)
+    {
+        // Chọn chuyến tàu và navigate đến trang chọn ghế
+        var chuyen = BookingService.DanhSachChuyenTau.FirstOrDefault(c => c.MaChuyen == maChuyen);
+        if (chuyen != null)
+        {
+            BookingService.ChuyenTauDaChon = chuyen;
+            BookingService.GheDaChon.Clear();
+            NavigationManager.NavigateTo($"/seat-selection/{maChuyen}");
+        }
+    }
+}
+
+<style>
+    .train-list-page {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding-bottom: 3rem;
+    }
+
+    /* Header */
+    .train-list-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 2rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 61, 122, 0.2);
+    }
+
+    .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .search-summary h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .search-summary p {
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+
+    .btn-modify-search {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-modify-search:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Main Content Layout */
+    .train-list-main {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 2rem;
+    }
+
+    @@media (max-width: 1024px) {
+        .train-list-main {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Filter Sidebar */
+    .filter-sidebar {
+        height: fit-content;
+        position: sticky;
+        top: 100px;
+    }
+
+    .filter-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-card h3 {
+        color: #003d7a;
+        margin-bottom: 1.5rem;
+        font-size: 1.2rem;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 1rem;
+    }
+
+    .filter-group {
+        margin-bottom: 2rem;
+    }
+
+    .filter-group h4 {
+        color: #333;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .filter-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .filter-option {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        cursor: pointer;
+        padding: 0.6rem;
+        border-radius: 6px;
+        transition: background 0.3s ease;
+    }
+
+    .filter-option:hover {
+        background: #f5f5f5;
+    }
+
+    .filter-option input {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: #003d7a;
+    }
+
+    .filter-option span {
+        font-size: 0.9rem;
+        color: #333;
+    }
+
+    .filter-option .count {
+        margin-left: auto;
+        background: #e0e0e0;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: #666;
+    }
+
+    /* Filter Actions */
+    .filter-actions {
+        display: flex;
+        gap: 0.8rem;
+        margin-top: 2rem;
+    }
+
+    .btn-apply-filter {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .btn-apply-filter:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 61, 122, 0.2);
+    }
+
+    .btn-reset-filter {
+        background: #f0f0f0;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 0.8rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .btn-reset-filter:hover {
+        background: #e0e0e0;
+    }
+
+    /* Train List Section */
+    .train-list-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Sort Bar */
+    .sort-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .result-count {
+        color: #666;
+        font-weight: 500;
+    }
+
+    .sort-options {
+        display: flex;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+    }
+
+    .sort-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .sort-btn:hover {
+        background: #e0e0e0;
+        border-color: #003d7a;
+    }
+
+    .sort-btn.active {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        border-color: #003d7a;
+    }
+
+    .sort-icon {
+        font-size: 1rem;
+    }
+
+    /* Train Cards Container */
+    .train-cards-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    /* Pagination */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        margin-top: 3rem;
+        padding-top: 2rem;
+        border-top: 1px solid #e0e0e0;
+    }
+
+    .pagination-btn {
+        min-width: 40px;
+        height: 40px;
+        border: 1px solid #ddd;
+        background: white;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+        border-color: #003d7a;
+        color: #003d7a;
+    }
+
+    .pagination-btn.active {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border-color: #003d7a;
+    }
+
+    .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .pagination-dots {
+        color: #999;
+    }
+
+    @@media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .search-summary h1 {
+            font-size: 1.5rem;
+        }
+
+        .sort-bar {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .sort-options {
+            width: 100%;
+        }
+
+        .sort-btn {
+            flex: 1;
+            justify-content: center;
+        }
+    }
+</style>

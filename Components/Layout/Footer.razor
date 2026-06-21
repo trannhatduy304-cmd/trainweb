@@ -1,0 +1,116 @@
+@* Footer Component - Chan trang cua ung dung *@
+@inject ProjectTrainWeb.Services.ThanhToanDuyetService DuyetService
+@{
+    var cauHinh = DuyetService.LayCauHinhHeThong();
+}
+
+<footer class="train-footer">
+    <div class="footer-container">
+        <div class="footer-section">
+            <h4>Liên Hệ</h4>
+            <p>Điện thoại: @cauHinh.DienThoaiLienHe</p>
+            <p>Email: @cauHinh.EmailLienHe</p>
+            <p>Địa chỉ: @cauHinh.DiaChiLienHe</p>
+        </div>
+        
+        <div class="footer-section">
+            <h4>Chính Sách</h4>
+            <ul>
+                <li><a href="policy">Chính sách bảo mật</a></li>
+                <li><a href="policy">Điều khoản sử dụng</a></li>
+                <li><a href="policy">Chính sách hoàn vé</a></li>
+            </ul>
+        </div>
+        
+        <div class="footer-section">
+            <h4>Theo Dõi Chúng Tôi</h4>
+            <ul>
+                <li><a href="@cauHinh.LinkFacebook">Facebook</a></li>
+                <li><a href="@cauHinh.LinkTwitter">Twitter</a></li>
+                <li><a href="@cauHinh.LinkInstagram">Instagram</a></li>
+            </ul>
+        </div>
+        
+        <div class="footer-section">
+            <h4>Tiện Ích</h4>
+            <ul>
+                <li><a href="contact">Liên hệ chúng tôi</a></li>
+                <li><a href="contact">Câu hỏi thường gặp</a></li>
+                <li><a href="ticket-lookup">Tra cứu vé</a></li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="footer-bottom">
+        <p>&copy; 2026 ProjectTrain. Mọi quyền được bảo lưu.</p>
+    </div>
+</footer>
+
+<style>
+    .train-footer {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 3rem 1rem 1rem;
+        margin-top: 3rem;
+    }
+
+    .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .footer-section h4 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        padding-bottom: 0.5rem;
+    }
+
+    .footer-section p,
+    .footer-section ul li {
+        font-size: 0.95rem;
+        line-height: 1.8;
+        opacity: 0.9;
+    }
+
+    .footer-section ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-section a {
+        color: white;
+        text-decoration: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .footer-section a:hover {
+        opacity: 0.7;
+        text-decoration: underline;
+    }
+
+    .footer-bottom {
+        text-align: center;
+        padding-top: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        opacity: 0.8;
+        font-size: 0.9rem;
+    }
+
+    @@media (max-width: 768px) {
+        .footer-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .footer-container {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

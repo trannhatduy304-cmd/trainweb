@@ -1,0 +1,388 @@
+@page "/login"
+@rendermode InteractiveServer
+@using ProjectTrainWeb.Models
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject NavigationManager NavigationManager
+
+<div class="login-page">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 11V4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"/>
+                        <path d="M4 15v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4"/>
+                        <line x1="4" y1="11" x2="20" y2="11"/>
+                        <line x1="4" y1="15" x2="20" y2="15"/>
+                        <circle cx="8" cy="18" r="1"/>
+                        <circle cx="16" cy="18" r="1"/>
+                    </svg>
+                </div>
+                <h1>VNRailway</h1>
+                <p>Đăng nhập vào tài khoản của bạn</p>
+            </div>
+
+            <div class="login-body">
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-error">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="15" y1="9" x2="9" y2="15"/>
+                            <line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                        <span>@errorMessage</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <span>@successMessage</span>
+                    </div>
+                }
+
+                <EditForm Model="@loginModel" OnValidSubmit="HandleLogin" FormName="loginForm">
+                    <div class="form-group">
+                        <label for="taikhoan">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003d7a" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            Tài khoản
+                        </label>
+                        <InputText id="taikhoan" @bind-Value="loginModel.TaiKhoan" class="form-input" placeholder="Nhập tài khoản" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="matkhau">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#003d7a" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            Mật khẩu
+                        </label>
+                        <InputText id="matkhau" @bind-Value="loginModel.MatKhau" type="password" class="form-input" placeholder="Nhập mật khẩu" />
+                    </div>
+
+                    <button type="submit" class="btn-login" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner"></span>
+                            <span>Đang xử lý...</span>
+                        }
+                        else
+                        {
+                            <span>Đăng Nhập</span>
+                        }
+                    </button>
+                </EditForm>
+
+                <div class="login-footer">
+                    <p>Chưa có tài khoản? <a href="/register">Đăng ký ngay</a></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="login-decoration">
+            <p>Hệ thống đặt vé tàu trực tuyến</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private LoginModel loginModel = new();
+    private string? errorMessage;
+    private string? successMessage;
+    private bool isLoading = false;
+
+    private class LoginModel
+    {
+        public string TaiKhoan { get; set; } = "";
+        public string MatKhau { get; set; } = "";
+    }
+
+    protected override void OnInitialized()
+    {
+        if (BookingService.DaDangNhap)
+        {
+            NavigationManager.NavigateTo("/");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(loginModel.TaiKhoan))
+        {
+            errorMessage = "Vui lòng nhập tài khoản.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(loginModel.MatKhau))
+        {
+            errorMessage = "Vui lòng nhập mật khẩu.";
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        await Task.Delay(500); // Simulate loading
+
+        var (thanhCong, thongBao) = BookingService.DangNhap(loginModel.TaiKhoan, loginModel.MatKhau);
+
+        if (thanhCong)
+        {
+            successMessage = thongBao;
+            StateHasChanged();
+            await Task.Delay(800);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            errorMessage = thongBao;
+            isLoading = false;
+        }
+    }
+}
+
+<style>
+    .login-page {
+        min-height: 100vh;
+        background: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .login-container {
+        width: 100%;
+        max-width: 440px;
+        animation: slideUp 0.6s ease-out;
+    }
+
+    @@keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .login-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(0, 61, 122, 0.12);
+        overflow: hidden;
+    }
+
+    .login-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        text-align: center;
+        padding: 36px 32px 28px;
+    }
+
+    .login-icon {
+        width: 72px;
+        height: 72px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        backdrop-filter: blur(10px);
+    }
+
+    .login-header h1 {
+        margin: 0 0 6px;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+
+    .login-header p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.85;
+        font-weight: 400;
+    }
+
+    .login-body {
+        padding: 32px;
+    }
+
+    .alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        font-size: 14px;
+        margin-bottom: 20px;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: #dc3545;
+        border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+        background: #f0fdf4;
+        color: #28a745;
+        border: 1px solid #bbf7d0;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1a1a2e;
+        margin-bottom: 8px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 15px;
+        color: #1a1a2e;
+        background: #fafbfc;
+        transition: all 0.3s ease;
+        outline: none;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        border-color: #003d7a;
+        background: white;
+        box-shadow: 0 0 0 4px rgba(0, 61, 122, 0.1);
+    }
+
+    .form-input::placeholder {
+        color: #adb5bd;
+    }
+
+    .btn-login {
+        width: 100%;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 8px;
+        letter-spacing: 0.3px;
+    }
+
+    .btn-login:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 61, 122, 0.35);
+    }
+
+    .btn-login:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    .btn-login:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @@keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .login-footer {
+        text-align: center;
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid #f0f0f0;
+    }
+
+    .login-footer p {
+        margin: 0;
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .login-footer a {
+        color: #003d7a;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.2s ease;
+    }
+
+    .login-footer a:hover {
+        color: #005fa3;
+        text-decoration: underline;
+    }
+
+    .login-decoration {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .login-decoration p {
+        color: #6c757d;
+        font-size: 13px;
+        margin: 0;
+    }
+
+    @@media (max-width: 480px) {
+        .login-body {
+            padding: 24px 20px;
+        }
+
+        .login-header {
+            padding: 28px 20px 24px;
+        }
+
+        .login-header h1 {
+            font-size: 24px;
+        }
+    }
+</style>

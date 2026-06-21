@@ -1,0 +1,994 @@
+@page "/seat-selection/{trainId}"
+@rendermode InteractiveServer
+@using ProjectTrainWeb.Models
+@using ProjectTrainWeb.Services
+@inject TrainBookingService BookingService
+@inject NavigationManager Navigation
+
+<PageTitle>Chọn Chỗ Ngồi - ProjectTrain</PageTitle>
+
+@if (ChuyenTau == null)
+{
+    <div class="seat-selection-page">
+        <section class="seat-header">
+            <div class="header-container">
+                <div class="trip-info">
+                    <h1>Chọn Chỗ Ngồi</h1>
+                    <p style="color: #ffcccc; margin-top: 0.5rem;">⚠️ Không tìm thấy chuyến tàu. Vui lòng quay lại chọn chuyến.</p>
+                </div>
+                <button class="btn-back" @onclick="NavigateBack">← Quay Lại</button>
+            </div>
+        </section>
+    </div>
+}
+else
+{
+    <div class="seat-selection-page">
+        <!-- Header Section -->
+        <section class="seat-header">
+            <div class="header-container">
+                <div class="trip-info">
+                    <h1>Chọn Chỗ Ngồi</h1>
+                    <div class="trip-details">
+                        <span class="trip-station">@(ChuyenTau.GaDi?.ThanhPho ?? "N/A") → @(ChuyenTau.GaDen?.ThanhPho ?? "N/A")</span>
+                        <span class="trip-date">@ChuyenTau.ThoiGianKhoiHanh.ToString("dd/MM/yyyy HH:mm") - @ChuyenTau.ThoiGianDenDu.ToString("dd/MM/yyyy HH:mm") (@TinhThoiGianDiChuyen())</span>
+                    </div>
+                </div>
+                <button class="btn-back" @onclick="NavigateBack">← Quay Lại</button>
+            </div>
+        </section>
+
+        <!-- Main Content -->
+        <div class="seat-main-content">
+            <!-- Left: Seat Selection -->
+            <section class="seat-selection-section">
+                <!-- Coach/Toa Selector -->
+                <div class="coach-selector">
+                    <h3>Chọn Toa</h3>
+                    <div class="coach-tabs">
+                        @for (int i = 0; i < coaches.Count; i++)
+                        {
+                            int idx = i;
+                            <button class="coach-tab @(currentCoach == idx ? "active" : "")" @onclick="() => SelectCoach(idx)">
+                                <span class="coach-icon">🚂</span>
+                                <span>Toa @(idx + 1)</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Coach Info -->
+                <div class="coach-info">
+                    <h3>Toa @(currentCoach + 1) - @(coaches[currentCoach].LoaiToa)</h3>
+                    <div class="coach-stats">
+                        <div class="stat">
+                            <span class="stat-color" style="background: #90EE90;"></span>
+                            <span>Trống: @GetEmptySeats() ghế</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-color" style="background: #FFA500;"></span>
+                            <span>Đã Chọn: @selectedSeats.Count ghế</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-color" style="background: #CCCCCC;"></span>
+                            <span>Đã Đặt: @GetBookedSeats() ghế</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Seat Grid -->
+                <div class="seat-map-container">
+                    <div class="seat-map">
+                        <!-- Train direction indicator -->
+                        <div class="train-direction">← Đầu Tàu (Hướng chuyển động)</div>
+
+                        <!-- Seats Grid -->
+                        <div class="seats-grid">
+                            @{
+                                int totalSeats = currentCoachSeats.Count;
+                                int totalRows = (int)Math.Ceiling(totalSeats / 4.0);
+                            }
+                            @for (int row = 0; row < totalRows; row++)
+                            {
+                                <!-- Left side seats (A, B) -->
+                                <div class="seat-row">
+                                    @for (int col = 0; col < 2; col++)
+                                    {
+                                        int seatNum = row * 4 + col + 1;
+                                        if (seatNum <= totalSeats)
+                                        {
+                                            var seat = currentCoachSeats.FirstOrDefault(s => s.MaGhe == seatNum);
+                                            if (seat != null)
+                                            {
+                                                string seatClass = GetSeatClass(seat);
+                                                var seatCapture = seat;
+
+                                                <button class="seat @seatClass" 
+                                                        @onclick="() => ToggleSeat(seatCapture)"
+                                                        disabled="@(seatCapture.TrangThai && !selectedSeats.Contains(seatCapture.MaGhe))">
+                                                    @seatCapture.MaGhe
+                                                </button>
+                                            }
+                                        }
+                                    }
+
+                                    <!-- Aisle -->
+                                    <div class="seat-aisle"></div>
+
+                                    <!-- Right side seats (C, D) -->
+                                    @for (int col = 2; col < 4; col++)
+                                    {
+                                        int seatNum = row * 4 + col + 1;
+                                        if (seatNum <= totalSeats)
+                                        {
+                                            var seat = currentCoachSeats.FirstOrDefault(s => s.MaGhe == seatNum);
+                                            if (seat != null)
+                                            {
+                                                string seatClass = GetSeatClass(seat);
+                                                var seatCapture = seat;
+
+                                                <button class="seat @seatClass" 
+                                                        @onclick="() => ToggleSeat(seatCapture)"
+                                                        disabled="@(seatCapture.TrangThai && !selectedSeats.Contains(seatCapture.MaGhe))">
+                                                    @seatCapture.MaGhe
+                                                </button>
+                                            }
+                                        }
+                                    }
+                                </div>
+
+                                <!-- Caboose indicator -->
+                                @if (row == totalRows - 1)
+                                {
+                                    <div class="train-direction">Cuối Tàu →</div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right: Booking Summary -->
+            <aside class="booking-summary">
+                <div class="summary-card">
+                    <h3>Tổng Kết Đặt Vé</h3>
+
+                    <!-- Selected Seats -->
+                    <div class="summary-section">
+                        <h4>Ghế Đã Chọn (@selectedSeats.Count)</h4>
+                        @if (selectedSeats.Count > 0)
+                        {
+                            <div class="selected-seats-list">
+                                @foreach (var seatNum in selectedSeats)
+                                {
+                                    <div class="selected-seat-item">
+                                        <span class="seat-badge">Toa @(currentCoach + 1) - Ghế @seatNum</span>
+                                        <button class="btn-remove" @onclick="() => RemoveSeat(seatNum)">×</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="empty-message">Hãy chọn ít nhất 1 ghế</p>
+                        }
+                    </div>
+
+                    <!-- Seat Type Selection -->
+                    <div class="summary-section">
+                        <h4>Loại Vé</h4>
+                        <div class="seat-type-options">
+                            <label class="radio-option">
+                                <input type="radio" name="seatType" value="ordinary" checked="@(seatType == "ordinary")" @onclick='() => seatType = "ordinary"'>
+                                <span>Vé Thường</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="seatType" value="vip" checked="@(seatType == "vip")" @onclick='() => seatType = "vip"'>
+                                <span>Vé VIP (+30%)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Price Calculation -->
+                    <div class="summary-section price-section">
+                        <div class="price-row">
+                            <span>Giá Cơ Bản:</span>
+                            <span class="price">@(currentBasePrice.ToString("N0")) VNĐ</span>
+                        </div>
+                        <div class="price-row">
+                            <span>Số Vé:</span>
+                            <span class="price">@selectedSeats.Count</span>
+                        </div>
+                        @if (seatType == "vip")
+                        {
+                            <div class="price-row">
+                                <span>Hệ Số VIP (1.3x):</span>
+                                <span class="price">@((currentBasePrice * 0.3).ToString("N0")) VNĐ</span>
+                            </div>
+                        }
+                        @if (discountAmount > 0)
+                        {
+                            <div class="price-row">
+                                <span>Giảm Giá:</span>
+                                <span class="price" style="color: #28a745;">-@(discountAmount.ToString("N0")) VNĐ</span>
+                            </div>
+                        }
+                        <div class="price-row divider"></div>
+                        <div class="price-row total">
+                            <span>Tổng Cộng:</span>
+                            <span class="price-total">@CalculateTotalPrice().ToString("N0") VNĐ</span>
+                        </div>
+                    </div>
+
+                    <!-- Voucher Input -->
+                    <div class="summary-section">
+                        <h4>Khuyến Mãi</h4>
+                        <div class="voucher-input-group">
+                            <input type="text" class="voucher-input" placeholder="Nhập mã khuyến mãi" @bind="voucherCode">
+                            <button class="btn-apply" @onclick="ApplyVoucher">Áp Dụng</button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(voucherMessage))
+                        {
+                            <p class="voucher-message @(voucherSuccess ? "success" : "error")">@voucherMessage</p>
+                        }
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="summary-actions">
+                        <button class="btn-continue" disabled="@(selectedSeats.Count == 0)" @onclick="ContinueToCheckout">
+                            Tiếp Tục Thanh Toán →
+                        </button>
+                        <button class="btn-cancel" @onclick="NavigateBack">Hủy</button>
+                    </div>
+
+                    <p class="summary-note">
+                        Tiền cả vé sẽ được thanh toán tại trang thanh toán tiếp theo.
+                    </p>
+                </div>
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    // Route parameter
+    [Parameter]
+    public string? TrainId { get; set; }
+
+    // Dữ liệu từ TrainBookingService
+    private ChuyenTau? ChuyenTau;
+    
+    // State
+    private int currentCoach = 0;
+    private List<int> selectedSeats = new();
+    private string seatType = "ordinary";
+    private string voucherCode = "";
+    private double currentBasePrice = 0;
+    private double discountAmount = 0;
+    private string voucherMessage = "";
+    private bool voucherSuccess = false;
+
+    // Dữ liệu toa
+    private List<ToaTau> coaches = new();
+    private List<GheNgoi> currentCoachSeats => coaches.Count > currentCoach ? coaches[currentCoach].DanhSachGhe : new List<GheNgoi>();
+
+    protected override void OnInitialized()
+    {
+        // Đọc chuyến tàu đã chọn từ BookingService
+        ChuyenTau = BookingService.ChuyenTauDaChon;
+
+        if (ChuyenTau != null)
+        {
+            // Nếu chuyến tàu có sẵn toa, dùng dữ liệu thực
+            if (ChuyenTau.DanhSachToa.Count > 0)
+            {
+                coaches = ChuyenTau.DanhSachToa;
+            }
+            else
+            {
+                // Fallback: Tạo 4 toa mẫu nếu chuyến tàu chưa có toa
+                for (int i = 0; i < 4; i++)
+                {
+                    var toa = new ToaTau($"{ChuyenTau.MaChuyen}-T{i + 1}", "Ghế Ngồi", 40, 350000);
+                    
+                    // Giả lập: Đặt trước một số ghế
+                    if (i == 0)
+                    {
+                        toa.DanhSachGhe[2].DatGhe();
+                        toa.DanhSachGhe[7].DatGhe();
+                        toa.DanhSachGhe[15].DatGhe();
+                    }
+                    
+                    coaches.Add(toa);
+                }
+            }
+
+            // Lấy giá cơ bản từ toa đầu tiên
+            currentBasePrice = coaches[0].GiaCoBan;
+
+            // Cập nhật toa đã chọn trong BookingService
+            BookingService.ToaDaChon = coaches[0];
+        }
+        else
+        {
+            // Nếu không có ChuyenTauDaChon, thử tìm theo TrainId
+            if (int.TryParse(TrainId, out int trainIdNum))
+            {
+                ChuyenTau = BookingService.DanhSachChuyenTau.FirstOrDefault(ct => ct.MaChuyen == trainIdNum);
+                if (ChuyenTau != null)
+                {
+                    BookingService.ChuyenTauDaChon = ChuyenTau;
+
+                    if (ChuyenTau.DanhSachToa.Count > 0)
+                    {
+                        coaches = ChuyenTau.DanhSachToa;
+                    }
+                    else
+                    {
+                        for (int i = 0; i < 4; i++)
+                        {
+                            var toa = new ToaTau($"{ChuyenTau.MaChuyen}-T{i + 1}", "Ghế Ngồi", 40, 350000);
+                            if (i == 0)
+                            {
+                                toa.DanhSachGhe[2].DatGhe();
+                                toa.DanhSachGhe[7].DatGhe();
+                                toa.DanhSachGhe[15].DatGhe();
+                            }
+                            coaches.Add(toa);
+                        }
+                    }
+
+                    currentBasePrice = coaches[0].GiaCoBan;
+                    BookingService.ToaDaChon = coaches[0];
+                }
+            }
+        }
+    }
+
+    // Tính thời gian di chuyển
+    private string TinhThoiGianDiChuyen()
+    {
+        if (ChuyenTau == null) return "";
+        var duration = ChuyenTau.ThoiGianDenDu - ChuyenTau.ThoiGianKhoiHanh;
+        return $"{(int)duration.TotalHours} giờ {duration.Minutes} phút";
+    }
+
+    // Methods
+    private void SelectCoach(int coachIndex)
+    {
+        currentCoach = coachIndex;
+        selectedSeats.Clear();
+        currentBasePrice = coaches[currentCoach].GiaCoBan;
+        BookingService.ToaDaChon = coaches[currentCoach];
+    }
+
+    private void ToggleSeat(GheNgoi seat)
+    {
+        if (seat.TrangThai && !selectedSeats.Contains(seat.MaGhe))
+            return; // Ghế đã đặt, không cho chọn
+
+        if (selectedSeats.Contains(seat.MaGhe))
+        {
+            selectedSeats.Remove(seat.MaGhe);
+        }
+        else
+        {
+            selectedSeats.Add(seat.MaGhe);
+        }
+    }
+
+    private void RemoveSeat(int seatNum)
+    {
+        selectedSeats.Remove(seatNum);
+    }
+
+    private string GetSeatClass(GheNgoi seat)
+    {
+        if (selectedSeats.Contains(seat.MaGhe))
+            return "selected"; // Orange
+        else if (seat.TrangThai)
+            return "booked"; // Gray
+        else
+            return "available"; // Light Green
+    }
+
+    private int GetEmptySeats()
+    {
+        return currentCoachSeats.Count(s => !s.TrangThai);
+    }
+
+    private int GetBookedSeats()
+    {
+        return currentCoachSeats.Count(s => s.TrangThai);
+    }
+
+    private double CalculateTotalPrice()
+    {
+        if (selectedSeats.Count == 0) return 0;
+        
+        double total = currentBasePrice * selectedSeats.Count;
+        
+        if (seatType == "vip")
+        {
+            total = total * 1.3; // 30% tăng giá
+        }
+
+        total -= discountAmount;
+        if (total < 0) total = 0;
+        
+        return total;
+    }
+
+    private void ApplyVoucher()
+    {
+        if (string.IsNullOrWhiteSpace(voucherCode))
+        {
+            voucherMessage = "Vui lòng nhập mã khuyến mãi!";
+            voucherSuccess = false;
+            return;
+        }
+
+        double giaGoc = currentBasePrice * selectedSeats.Count;
+        if (seatType == "vip") giaGoc *= 1.3;
+
+        var (thanhCong, tienGiam, thongBao) = BookingService.ApDungKhuyenMai(voucherCode, giaGoc);
+        
+        if (thanhCong)
+        {
+            discountAmount = tienGiam;
+            voucherMessage = thongBao;
+            voucherSuccess = true;
+        }
+        else
+        {
+            discountAmount = 0;
+            voucherMessage = thongBao;
+            voucherSuccess = false;
+        }
+    }
+
+    private void ContinueToCheckout()
+    {
+        if (selectedSeats.Count == 0) return;
+
+        // Lưu ghế đã chọn vào BookingService
+        BookingService.GheDaChon.Clear();
+        foreach (var seatNum in selectedSeats)
+        {
+            var ghe = currentCoachSeats.FirstOrDefault(s => s.MaGhe == seatNum);
+            if (ghe != null)
+            {
+                BookingService.GheDaChon.Add(ghe);
+            }
+        }
+        BookingService.LoaiVeDaChon = seatType;
+
+        Navigation.NavigateTo("/checkout");
+    }
+
+    private void NavigateBack()
+    {
+        Navigation.NavigateTo("/search-trains");
+    }
+}
+
+<style>
+    .seat-selection-page {
+        background: #f8f9fa;
+        min-height: 100vh;
+        padding-bottom: 3rem;
+    }
+
+    /* Header Section */
+    .seat-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 2rem 1rem;
+        box-shadow: 0 4px 12px rgba(0, 61, 122, 0.2);
+    }
+
+    .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .trip-info h1 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .trip-details {
+        display: flex;
+        gap: 2rem;
+        font-size: 0.95rem;
+    }
+
+    .btn-back {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.8rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Main Content Layout */
+    .seat-main-content {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+    }
+
+    @@media (max-width: 1024px) {
+        .seat-main-content {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Seat Selection Section */
+    .seat-selection-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Coach Selector */
+    .coach-selector {
+        margin-bottom: 2rem;
+    }
+
+    .coach-selector h3 {
+        color: #003d7a;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .coach-tabs {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .coach-tab {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f0f0f0;
+        border: 2px solid transparent;
+        padding: 0.8rem 1.2rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        white-space: nowrap;
+    }
+
+    .coach-tab:hover {
+        background: #e0e0e0;
+    }
+
+    .coach-tab.active {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        border-color: #003d7a;
+    }
+
+    .coach-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Coach Info */
+    .coach-info {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .coach-info h3 {
+        color: #003d7a;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .coach-stats {
+        display: flex;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .stat {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+    .stat-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+    }
+
+    /* Seat Map */
+    .seat-map-container {
+        overflow-x: auto;
+        margin-top: 2rem;
+    }
+
+    .seat-map {
+        min-width: 600px;
+        padding: 2rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 2px solid #e0e0e0;
+    }
+
+    .train-direction {
+        text-align: center;
+        color: #666;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        padding: 0.8rem;
+        background: rgba(0, 61, 122, 0.1);
+        border-radius: 8px;
+    }
+
+    .seats-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .seat-row {
+        display: grid;
+        grid-template-columns: repeat(2, 50px) 20px repeat(2, 50px);
+        gap: 0.8rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .seat {
+        width: 50px;
+        height: 50px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        font-size: 0.9rem;
+    }
+
+    .seat.available {
+        background: #90EE90;
+        color: #333;
+        border-color: #3cb371;
+    }
+
+    .seat.available:hover:not(:disabled) {
+        background: #7FD97F;
+        transform: scale(1.05);
+        box-shadow: 0 4px 8px rgba(60, 179, 113, 0.3);
+    }
+
+    .seat.selected {
+        background: #FFA500;
+        color: white;
+        border-color: #ff8c00;
+        box-shadow: 0 4px 12px rgba(255, 165, 0, 0.4);
+    }
+
+    .seat.booked {
+        background: #CCCCCC;
+        color: #999;
+        border-color: #999;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .seat:disabled {
+        cursor: not-allowed;
+    }
+
+    .seat-aisle {
+        width: 20px;
+    }
+
+    /* Booking Summary */
+    .booking-summary {
+        position: sticky;
+        top: 100px;
+        height: fit-content;
+    }
+
+    .summary-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-card h3 {
+        color: #003d7a;
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        border-bottom: 2px solid #e0e0e0;
+        padding-bottom: 1rem;
+    }
+
+    .summary-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e0e0e0;
+    }
+
+    .summary-section h4 {
+        color: #333;
+        margin-bottom: 0.8rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .selected-seats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .selected-seat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f0f5ff;
+        padding: 0.8rem;
+        border-radius: 6px;
+        border-left: 3px solid #003d7a;
+    }
+
+    .seat-badge {
+        font-size: 0.9rem;
+        color: #003d7a;
+        font-weight: 500;
+    }
+
+    .btn-remove {
+        background: none;
+        border: none;
+        color: #ff4444;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: transform 0.3s ease;
+    }
+
+    .btn-remove:hover {
+        transform: scale(1.2);
+    }
+
+    .empty-message {
+        color: #999;
+        font-style: italic;
+        font-size: 0.9rem;
+    }
+
+    /* Radio Options */
+    .seat-type-options {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .radio-option {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        cursor: pointer;
+        padding: 0.8rem;
+        border-radius: 6px;
+        transition: background 0.3s ease;
+    }
+
+    .radio-option:hover {
+        background: #f5f5f5;
+    }
+
+    .radio-option input {
+        cursor: pointer;
+        width: 18px;
+        height: 18px;
+        accent-color: #003d7a;
+    }
+
+    .radio-option span {
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+    /* Price Section */
+    .price-section {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin: 0 !important;
+        padding-bottom: 1rem !important;
+        border: none !important;
+    }
+
+    .price-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.8rem;
+        font-size: 0.95rem;
+        color: #333;
+    }
+
+    .price {
+        font-weight: 600;
+        color: #003d7a;
+    }
+
+    .price-row.divider {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 0.8rem;
+    }
+
+    .price-row.total {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #ff4444;
+    }
+
+    .price-total {
+        color: #ff4444 !important;
+        font-size: 1.1rem;
+    }
+
+    /* Voucher */
+    .voucher-input-group {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .voucher-input {
+        flex: 1;
+        padding: 0.8rem;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-family: inherit;
+        transition: border-color 0.3s ease;
+    }
+
+    .voucher-input:focus {
+        outline: none;
+        border-color: #003d7a;
+        background: #f0f5ff;
+    }
+
+    .btn-apply {
+        background: #003d7a;
+        color: white;
+        border: none;
+        padding: 0.8rem 1.2rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: background 0.3s ease;
+        white-space: nowrap;
+    }
+
+    .btn-apply:hover {
+        background: #0055aa;
+    }
+
+    .voucher-message {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+    }
+
+    .voucher-message.success {
+        color: #28a745;
+        background: #d4edda;
+    }
+
+    .voucher-message.error {
+        color: #dc3545;
+        background: #f8d7da;
+    }
+
+    /* Action Buttons */
+    .summary-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+        margin-top: 2rem;
+    }
+
+    .btn-continue {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-continue:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    .btn-continue:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-cancel {
+        background: #f0f0f0;
+        color: #333;
+        border: 1px solid #ddd;
+        padding: 0.8rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-cancel:hover {
+        background: #e0e0e0;
+    }
+
+    .summary-note {
+        font-size: 0.8rem;
+        color: #999;
+        margin-top: 1rem;
+        text-align: center;
+    }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .trip-details {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .seat-selection-section {
+            padding: 1rem;
+        }
+
+        .seat-row {
+            grid-template-columns: repeat(2, 40px) 15px repeat(2, 40px);
+        }
+
+        .seat {
+            width: 40px;
+            height: 40px;
+            font-size: 0.8rem;
+        }
+    }
+</style>

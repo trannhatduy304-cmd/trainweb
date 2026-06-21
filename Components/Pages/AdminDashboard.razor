@@ -1,0 +1,1603 @@
+@page "/admin"
+@rendermode InteractiveServer
+@using ProjectTrainWeb.Models
+@using Microsoft.AspNetCore.Components.Forms
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject ProjectTrainWeb.Services.ThanhToanDuyetService DuyetService
+@inject NavigationManager NavigationManager
+
+@* Admin Dashboard - Trang Quản Trị Hệ Thống *@
+
+<div class="admin-page">
+    @if (!BookingService.LaQuanTri)
+    {
+        <!-- Access Denied -->
+        <div class="access-denied">
+            <div class="denied-card">
+                <div class="denied-icon">🔒</div>
+                <h1>Truy Cập Bị Từ Chối</h1>
+                <p>Bạn không có quyền truy cập trang quản trị. Vui lòng đăng nhập bằng tài khoản quản trị viên.</p>
+                <button class="btn-back" @onclick='() => NavigationManager.NavigateTo("/")'>
+                    ← Quay Về Trang Chủ
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Admin Header -->
+        <section class="admin-header">
+            <div class="header-container">
+                <div class="header-left">
+                    <h1>🛡️ Trang Quản Trị</h1>
+                    <p>Xin chào, @BookingService.TenHienThi! Quản lý hệ thống ProjectTrain.</p>
+                </div>
+                <div class="header-right">
+                    <span class="admin-badge">👑 Admin</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stats-container">
+                <div class="stat-card blue">
+                    <div class="stat-icon">🎫</div>
+                    <div class="stat-info">
+                        <span class="stat-number">@thongKe.tongVe</span>
+                        <span class="stat-label">Tổng Vé</span>
+                    </div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <span class="stat-number">@thongKe.tongHanhKhach</span>
+                        <span class="stat-label">Tổng Hành Khách</span>
+                    </div>
+                </div>
+                <div class="stat-card orange">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <span class="stat-number">@thongKe.tongDoanhThu.ToString("N0")</span>
+                        <span class="stat-label">Doanh Thu (VND)</span>
+                    </div>
+                </div>
+                <div class="stat-card purple">
+                    <div class="stat-icon">🚂</div>
+                    <div class="stat-info">
+                        <span class="stat-number">@thongKe.tongChuyenTau</span>
+                        <span class="stat-label">Tổng Chuyến Tàu</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <section class="tab-section">
+            <div class="tab-container">
+                <div class="tab-nav">
+                    <button class="tab-btn @(activeTab == "trains" ? "active" : "")" @onclick='() => activeTab = "trains"'>
+                        🚂 Chuyến Tàu
+                    </button>
+                    <button class="tab-btn @(activeTab == "users" ? "active" : "")" @onclick='() => activeTab = "users"'>
+                        👥 Hành Khách
+                    </button>
+                    <button class="tab-btn @(activeTab == "transactions" ? "active" : "")" @onclick='() => activeTab = "transactions"'>
+                        💳 Giao Dịch
+                    </button>
+                    <button class="tab-btn @(activeTab == "logs" ? "active" : "")" @onclick='() => activeTab = "logs"'>
+                        📋 Lịch Sử
+                    </button>
+                    <button class="tab-btn @(activeTab == "approval" ? "active" : "")" @onclick='() => activeTab = "approval"'>
+                        💳 Duyệt Thanh Toán
+                        @{ int soChoDuyet = DuyetService.DemYeuCauChoDuyet(); }
+                        @if (soChoDuyet > 0)
+                        {
+                            <span class="tab-badge">@soChoDuyet</span>
+                        }
+                    </button>
+                    <button class="tab-btn @(activeTab == "payment-config" ? "active" : "")" @onclick='() => activeTab = "payment-config"'>
+                        ⚙️ Cấu Hình TT
+                    </button>
+                    <button class="tab-btn @(activeTab == "manage-trains" ? "active" : "")" @onclick='() => activeTab = "manage-trains"'>
+                        🚂 Quản Lý Tàu
+                    </button>
+                    <button class="tab-btn @(activeTab == "content" ? "active" : "")" @onclick='() => activeTab = "content"'>
+                        📝 Nội Dung
+                    </button>
+                    <button class="tab-btn @(activeTab == "accounts" ? "active" : "")" @onclick='() => activeTab = "accounts"'>
+                        👥 Tài Khoản
+                    </button>
+                </div>
+
+                <!-- Trains Table -->
+                @if (activeTab == "trains")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Danh Sách Chuyến Tàu</h2>
+                            <span class="record-count">@BookingService.DanhSachChuyenTau.Count chuyến</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Chuyến</th>
+                                        <th>Ga Đi</th>
+                                        <th>Ga Đến</th>
+                                        <th>Khởi Hành</th>
+                                        <th>Đến Dự Kiến</th>
+                                        <th>Số Toa</th>
+                                        <th>Ghế Trống</th>
+                                        <th>Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ct in BookingService.DanhSachChuyenTau)
+                                    {
+                                        int tongGhe = ct.DanhSachToa.Sum(t => t.DanhSachGhe.Count);
+                                        int gheTrong = ct.DanhSachToa.Sum(t => t.DemGheTrong());
+                                        <tr>
+                                            <td><span class="code-text">CT-@ct.MaChuyen</span></td>
+                                            <td>@(ct.GaDi?.TenGa ?? "N/A")</td>
+                                            <td>@(ct.GaDen?.TenGa ?? "N/A")</td>
+                                            <td>@ct.ThoiGianKhoiHanh.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@ct.ThoiGianDenDu.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="center">@ct.DanhSachToa.Count</td>
+                                            <td>
+                                                <span class="seat-badge @(gheTrong > 0 ? "available" : "full")">
+                                                    @gheTrong / @tongGhe
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="status-badge @(ct.ConHopLe() ? "active" : "expired")">
+                                                    @(ct.ConHopLe() ? "Hoạt Động" : "Hết Hạn")
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- Users Table -->
+                @if (activeTab == "users")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Danh Sách Hành Khách</h2>
+                            <span class="record-count">@BookingService.DanhSachHanhKhach.Count hành khách</span>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã ND</th>
+                                        <th>Họ Tên</th>
+                                        <th>Tài Khoản</th>
+                                        <th>Số Điện Thoại</th>
+                                        <th>Số Vé</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var hk in BookingService.DanhSachHanhKhach)
+                                    {
+                                        int soVe = BookingService.DanhSachVe.Count(v => v.HanhKhach?.MaNguoiDung == hk.MaNguoiDung);
+                                        <tr>
+                                            <td><span class="code-text">HK-@hk.MaNguoiDung</span></td>
+                                            <td><strong>@hk.HoTen</strong></td>
+                                            <td>@hk.TaiKhoan</td>
+                                            <td>@hk.SoDienThoai</td>
+                                            <td class="center">@soVe</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- Transactions Table -->
+                @if (activeTab == "transactions")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Giao Dịch Gần Đây</h2>
+                            <span class="record-count">@BookingService.DanhSachGiaoDich.Count giao dịch</span>
+                        </div>
+                        <div class="table-responsive">
+                            @if (BookingService.DanhSachGiaoDich.Count == 0)
+                            {
+                                <div class="empty-state">
+                                    <span class="empty-icon">💳</span>
+                                    <p>Chưa có giao dịch nào trong hệ thống.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã GD</th>
+                                            <th>Số Tiền</th>
+                                            <th>Phương Thức</th>
+                                            <th>Loại GD</th>
+                                            <th>Trạng Thái</th>
+                                            <th>Ngày Thực Hiện</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var gd in BookingService.DanhSachGiaoDich.OrderByDescending(g => g.NgayThucHien))
+                                        {
+                                            <tr>
+                                                <td><span class="code-text">@gd.MaGiaoDich.Substring(0, Math.Min(8, gd.MaGiaoDich.Length))...</span></td>
+                                                <td class="money @(gd.LoaiGiaoDich == "Hoan Tien" ? "refund" : "")">
+                                                    @(gd.LoaiGiaoDich == "Hoan Tien" ? "+" : "-")@gd.SoTien.ToString("N0") VND
+                                                </td>
+                                                <td>@gd.PhuongThuc</td>
+                                                <td>
+                                                    <span class="type-badge @(gd.LoaiGiaoDich == "Hoan Tien" ? "refund" : "payment")">
+                                                        @gd.LoaiGiaoDich
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <span class="status-badge @(gd.TrangThai == "Thanh Cong" ? "active" : "expired")">
+                                                        @gd.TrangThai
+                                                    </span>
+                                                </td>
+                                                <td>@gd.NgayThucHien.ToString("dd/MM/yyyy HH:mm")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- System Logs -->
+                @if (activeTab == "logs")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Lịch Sử Hệ Thống</h2>
+                            <span class="record-count">@BookingService.DanhSachLichSu.Count bản ghi</span>
+                        </div>
+                        <div class="table-responsive">
+                            @if (BookingService.DanhSachLichSu.Count == 0)
+                            {
+                                <div class="empty-state">
+                                    <span class="empty-icon">📋</span>
+                                    <p>Chưa có lịch sử hoạt động nào.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Thời Gian</th>
+                                            <th>Hành Động</th>
+                                            <th>Người Thực Hiện</th>
+                                            <th>Chi Tiết</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var ls in BookingService.DanhSachLichSu.OrderByDescending(l => l.ThoiGian).Take(20))
+                                        {
+                                            <tr>
+                                                <td class="time-cell">@ls.ThoiGian.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                                <td>
+                                                    <span class="action-badge">@ls.HanhDong</span>
+                                                </td>
+                                                <td><strong>@ls.NguoiThucHien</strong></td>
+                                                <td class="detail-cell">@ls.ChiTiet</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Duyệt Thanh Toán -->
+                @if (activeTab == "approval")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Duyệt Yêu Cầu Thanh Toán</h2>
+                            <span class="record-count">@DuyetService.LayTatCaYeuCau().Count yêu cầu</span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert-message @(isSuccess ? "success" : "error")">
+                                @message
+                            </div>
+                        }
+
+                        <div class="table-responsive">
+                            @{ var danhSachYeuCau = DuyetService.LayTatCaYeuCau(); }
+                            @if (danhSachYeuCau.Count == 0)
+                            {
+                                <div class="empty-state">
+                                    <span class="empty-icon">💳</span>
+                                    <p>Chưa có yêu cầu thanh toán nào.</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã Yêu Cầu</th>
+                                            <th>Người Đặt</th>
+                                            <th>Mã Vé</th>
+                                            <th>Số Tiền</th>
+                                            <th>Thời Gian Gửi</th>
+                                            <th>Trạng Thái</th>
+                                            <th>Thao Tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var yc in danhSachYeuCau)
+                                        {
+                                            <tr>
+                                                <td><span class="code-text">@yc.MaYeuCau.Substring(0, Math.Min(8, yc.MaYeuCau.Length))...</span></td>
+                                                <td><strong>@yc.NguoiDat?.HoTen</strong></td>
+                                                <td><span class="code-text">@(yc.Ve?.MaVe.Substring(0, Math.Min(8, yc.Ve.MaVe.Length)) ?? "N/A")...</span></td>
+                                                <td class="money">@yc.SoTienThanhToan.ToString("N0") VND</td>
+                                                <td>@yc.ThoiGianGui.ToString("dd/MM/yyyy HH:mm")</td>
+                                                <td>
+                                                    @if (yc.TrangThai == "Chờ Duyệt")
+                                                    {
+                                                        <span class="status-badge pending">🟡 Chờ Duyệt</span>
+                                                    }
+                                                    else if (yc.TrangThai == "Đã Duyệt")
+                                                    {
+                                                        <span class="status-badge active">🟢 Đã Duyệt</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="status-badge rejected">🔴 Từ Chối</span>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    @if (yc.TrangThai == "Chờ Duyệt")
+                                                    {
+                                                        <div class="action-buttons">
+                                                            <button class="btn-approve" @onclick="() => XuLyDuyet(yc.MaYeuCau)">
+                                                                ✅ Duyệt
+                                                            </button>
+                                                            <button class="btn-reject" @onclick="() => XuLyTuChoi(yc.MaYeuCau)">
+                                                                ❌ Từ Chối
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Đã xử lý</span>
+                                                    }
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Cấu Hình Thanh Toán -->
+                @if (activeTab == "payment-config")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Cấu Hình Thanh Toán</h2>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert-message @(isSuccess ? "success" : "error")">
+                                @message
+                            </div>
+                        }
+
+                        <div class="form-container">
+                            <div class="form-group">
+                                <label>Số Tài Khoản</label>
+                                <input type="text" class="form-input" @bind="localCauHinh.SoTaiKhoan" />
+                            </div>
+                            <div class="form-group">
+                                <label>Tên Ngân Hàng</label>
+                                <input type="text" class="form-input" @bind="localCauHinh.TenNganHang" />
+                            </div>
+                            <div class="form-group">
+                                <label>Tên Chủ Tài Khoản</label>
+                                <input type="text" class="form-input" @bind="localCauHinh.TenChuTaiKhoan" />
+                            </div>
+                            <div class="form-group">
+                                <label>Chi Nhánh</label>
+                                <input type="text" class="form-input" @bind="localCauHinh.ChiNhanh" />
+                            </div>
+                            <div class="form-group">
+                                <label>Nội Dung Chuyển Khoản Mẫu</label>
+                                <input type="text" class="form-input" @bind="localCauHinh.NoiDungMau" />
+                            </div>
+                            <div class="form-group">
+                                <label>Upload Hình QR</label>
+                                <InputFile OnChange="HandleQRUpload" class="form-input-file" />
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(localCauHinh.HinhQR))
+                            {
+                                <div class="qr-preview">
+                                    <label>Xem Trước QR:</label>
+                                    <img src="@localCauHinh.HinhQR" alt="QR Preview" class="qr-image" />
+                                </div>
+                            }
+
+                            <div class="form-actions">
+                                <button class="btn-save" @onclick="LuuCauHinhThanhToan">
+                                    💾 Lưu Cấu Hình
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Quản Lý Chuyến Tàu -->
+                @if (activeTab == "manage-trains")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Quản Lý Chuyến Tàu</h2>
+                            <span class="record-count">@BookingService.DanhSachChuyenTau.Count chuyến</span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert-message @(isSuccess ? "success" : "error")">
+                                @message
+                            </div>
+                        }
+
+                        <!-- Form thêm chuyến tàu -->
+                        <div class="form-container">
+                            <h3 class="form-title">➕ Thêm Chuyến Tàu Mới</h3>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Ga Đi</label>
+                                    <select class="form-input" @bind="newGaDi">
+                                        <option value="0">-- Chọn Ga Đi --</option>
+                                        @foreach (var ga in BookingService.DanhSachGa)
+                                        {
+                                            <option value="@ga.MaGa">@ga.TenGa (@ga.ThanhPho)</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Ga Đến</label>
+                                    <select class="form-input" @bind="newGaDen">
+                                        <option value="0">-- Chọn Ga Đến --</option>
+                                        @foreach (var ga in BookingService.DanhSachGa)
+                                        {
+                                            <option value="@ga.MaGa">@ga.TenGa (@ga.ThanhPho)</option>
+                                        }
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Giờ Khởi Hành</label>
+                                    <input type="datetime-local" class="form-input" @bind="newKhoiHanh" />
+                                </div>
+                                <div class="form-group">
+                                    <label>Giờ Đến Dự Kiến</label>
+                                    <input type="datetime-local" class="form-input" @bind="newDenDu" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Số Toa (mỗi toa 40 ghế, giá cơ bản 300.000 VND)</label>
+                                <input type="number" class="form-input" @bind="newSoToa" min="1" max="20" />
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn-save" @onclick="ThemChuyenTau">
+                                    ➕ Thêm Chuyến Tàu
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Bảng danh sách chuyến tàu -->
+                        <div class="table-responsive" style="margin-top: 1.5rem;">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mã Chuyến</th>
+                                        <th>Ga Đi</th>
+                                        <th>Ga Đến</th>
+                                        <th>Khởi Hành</th>
+                                        <th>Đến Dự Kiến</th>
+                                        <th>Số Toa</th>
+                                        <th>Trạng Thái</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ct in BookingService.DanhSachChuyenTau)
+                                    {
+                                        <tr>
+                                            <td><span class="code-text">CT-@ct.MaChuyen</span></td>
+                                            <td>@(ct.GaDi?.TenGa ?? "N/A")</td>
+                                            <td>@(ct.GaDen?.TenGa ?? "N/A")</td>
+                                            <td>@ct.ThoiGianKhoiHanh.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>@ct.ThoiGianDenDu.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="center">@ct.DanhSachToa.Count</td>
+                                            <td>
+                                                <span class="status-badge @(ct.ConHopLe() ? "active" : "expired")">
+                                                    @(ct.ConHopLe() ? "Hoạt Động" : "Hết Hạn")
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button class="btn-delete" @onclick="() => XoaChuyenTau(ct)">
+                                                    🗑️ Xóa
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- Quản Lý Nội Dung -->
+                @if (activeTab == "content")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Quản Lý Nội Dung Hệ Thống</h2>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(message))
+                        {
+                            <div class="alert-message @(isSuccess ? "success" : "error")">
+                                @message
+                            </div>
+                        }
+
+                        <div class="form-container">
+                            <div class="form-group">
+                                <label>📢 Thông Báo Chung</label>
+                                <textarea class="form-textarea" rows="3" @bind="localCauHinhHT.ThongBaoChung"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>🔄 Chính Sách Hoàn Vé</label>
+                                <textarea class="form-textarea" rows="3" @bind="localCauHinhHT.ChinhSachHoanVe"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>🔒 Chính Sách Bảo Mật</label>
+                                <textarea class="form-textarea" rows="3" @bind="localCauHinhHT.ChinhSachBaoMat"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>📜 Điều Khoản Sử Dụng</label>
+                                <textarea class="form-textarea" rows="3" @bind="localCauHinhHT.DieuKhoanSuDung"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>📞 Điện Thoại</label>
+                                <input type="text" class="form-input" @bind="localCauHinhHT.DienThoaiLienHe" />
+                            </div>
+                            <div class="form-group">
+                                <label>📧 Email</label>
+                                <input type="email" class="form-input" @bind="localCauHinhHT.EmailLienHe" />
+                            </div>
+                            <div class="form-group">
+                                <label>📍 Địa Chỉ</label>
+                                <input type="text" class="form-input" @bind="localCauHinhHT.DiaChiLienHe" />
+                            </div>
+                            <div class="form-group">
+                                <label>🌐 Link Facebook</label>
+                                <input type="text" class="form-input" @bind="localCauHinhHT.LinkFacebook" />
+                            </div>
+                            <div class="form-group">
+                                <label>🌐 Link Twitter</label>
+                                <input type="text" class="form-input" @bind="localCauHinhHT.LinkTwitter" />
+                            </div>
+                            <div class="form-group">
+                                <label>🌐 Link Instagram</label>
+                                <input type="text" class="form-input" @bind="localCauHinhHT.LinkInstagram" />
+                            </div>
+                            <div class="form-actions">
+                                <button class="btn-save" @onclick="LuuCauHinhHeThong">
+                                    💾 Lưu Thay Đổi
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @* ===================== TAB: QUAN LY TAI KHOAN ===================== *@
+                @if (activeTab == "accounts")
+                {
+                    <div class="tab-content">
+                        <div class="table-header">
+                            <h2>Quản Lý Tài Khoản</h2>
+                            <span class="badge">@BookingService.DanhSachHanhKhach.Count hành khách | @BookingService.DanhSachQuanTri.Count admin</span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(accountMessage))
+                        {
+                            <div class="alert-message @(accountSuccess ? "success" : "error")">
+                                @accountMessage
+                            </div>
+                        }
+
+                        <h3 style="margin: 1rem 0 0.5rem; color: #003d7a;">👥 Danh Sách Hành Khách</h3>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tài Khoản</th>
+                                        <th>Họ Tên</th>
+                                        <th>SĐT</th>
+                                        <th>Thao Tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var hk in BookingService.DanhSachHanhKhach)
+                                    {
+                                        <tr>
+                                            <td>@hk.MaNguoiDung</td>
+                                            <td><strong>@hk.TaiKhoan</strong></td>
+                                            <td>@hk.HoTen</td>
+                                            <td>@hk.SoDienThoai</td>
+                                            <td>
+                                                <button class="btn-delete-small" @onclick="() => XoaTaiKhoanHK(hk.TaiKhoan)">
+                                                    🗑️ Xóa
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3 style="margin: 1.5rem 0 0.5rem; color: #003d7a;">🔑 Danh Sách Quản Trị Viên</h3>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Tài Khoản</th>
+                                        <th>Họ Tên</th>
+                                        <th>Cấp Quyền</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var admin in BookingService.DanhSachQuanTri)
+                                    {
+                                        <tr>
+                                            <td>@admin.MaNguoiDung</td>
+                                            <td><strong>@admin.TaiKhoan</strong></td>
+                                            <td>@admin.HoTen</td>
+                                            <td>
+                                                @if (admin.MucCapQuyen >= 2)
+                                                {
+                                                    <span style="color: #dc3545; font-weight: 600;">⭐ Cấp Cao</span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="color: #007bff;">Thường</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="form-actions" style="margin-top: 1rem;">
+                            <button class="btn-save" @onclick="LuuTaiKhoan">
+                                💾 Lưu Tất Cả Tài Khoản
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private string activeTab = "trains";
+    private (int tongVe, int tongHanhKhach, double tongDoanhThu, int tongChuyenTau) thongKe;
+
+    // Feedback message
+    private string message = "";
+    private bool isSuccess = false;
+
+    // Form thêm chuyến tàu
+    private int newGaDi = 0;
+    private int newGaDen = 0;
+    private DateTime newKhoiHanh = DateTime.Now.AddHours(2);
+    private DateTime newDenDu = DateTime.Now.AddHours(10);
+    private int newSoToa = 3;
+
+    // Cấu hình thanh toán
+    private CauHinhThanhToan localCauHinh = new();
+
+    // Cấu hình hệ thống
+    private CauHinhHeThong localCauHinhHT = new();
+
+    protected override void OnInitialized()
+    {
+        if (BookingService.LaQuanTri)
+        {
+            thongKe = BookingService.LayThongKe();
+            // Load cấu hình hiện tại
+            var cauHinhHienTai = DuyetService.LayCauHinhThanhToan();
+            localCauHinh = new CauHinhThanhToan
+            {
+                SoTaiKhoan = cauHinhHienTai.SoTaiKhoan,
+                TenNganHang = cauHinhHienTai.TenNganHang,
+                TenChuTaiKhoan = cauHinhHienTai.TenChuTaiKhoan,
+                ChiNhanh = cauHinhHienTai.ChiNhanh,
+                HinhQR = cauHinhHienTai.HinhQR,
+                NoiDungMau = cauHinhHienTai.NoiDungMau
+            };
+
+            var cauHinhHTHienTai = DuyetService.LayCauHinhHeThong();
+            localCauHinhHT = new CauHinhHeThong
+            {
+                ThongBaoChung = cauHinhHTHienTai.ThongBaoChung,
+                ChinhSachHoanVe = cauHinhHTHienTai.ChinhSachHoanVe,
+                ChinhSachBaoMat = cauHinhHTHienTai.ChinhSachBaoMat,
+                DieuKhoanSuDung = cauHinhHTHienTai.DieuKhoanSuDung,
+                ThongTinLienHe = cauHinhHTHienTai.ThongTinLienHe
+            };
+        }
+    }
+
+    // === Duyệt Thanh Toán ===
+    private void XuLyDuyet(string maYeuCau)
+    {
+        var result = DuyetService.DuyetThanhToan(maYeuCau);
+        message = result.thongBao;
+        isSuccess = result.thanhCong;
+        thongKe = BookingService.LayThongKe();
+        StateHasChanged();
+    }
+
+    private void XuLyTuChoi(string maYeuCau)
+    {
+        var result = DuyetService.TuChoiThanhToan(maYeuCau, "Admin từ chối yêu cầu thanh toán.");
+        message = result.thongBao;
+        isSuccess = result.thanhCong;
+        StateHasChanged();
+    }
+
+    // === Cấu Hình Thanh Toán ===
+    private async Task HandleQRUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024).ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            localCauHinh.HinhQR = $"data:{file.ContentType};base64,{base64}";
+            StateHasChanged();
+        }
+    }
+
+    private void LuuCauHinhThanhToan()
+    {
+        DuyetService.LuuCauHinhThanhToan(localCauHinh);
+        message = "Đã lưu cấu hình thanh toán thành công!";
+        isSuccess = true;
+        StateHasChanged();
+    }
+
+    // === Quản Lý Chuyến Tàu ===
+    private void ThemChuyenTau()
+    {
+        if (newGaDi == 0 || newGaDen == 0)
+        {
+            message = "Vui lòng chọn ga đi và ga đến!";
+            isSuccess = false;
+            return;
+        }
+        if (newGaDi == newGaDen)
+        {
+            message = "Ga đi và ga đến không được trùng nhau!";
+            isSuccess = false;
+            return;
+        }
+        if (newKhoiHanh >= newDenDu)
+        {
+            message = "Giờ khởi hành phải trước giờ đến!";
+            isSuccess = false;
+            return;
+        }
+        if (newSoToa < 1)
+        {
+            message = "Số toa phải lớn hơn 0!";
+            isSuccess = false;
+            return;
+        }
+
+        var gaDi = BookingService.DanhSachGa.FirstOrDefault(g => g.MaGa == newGaDi);
+        var gaDen = BookingService.DanhSachGa.FirstOrDefault(g => g.MaGa == newGaDen);
+        int maChuyen = BookingService.DanhSachChuyenTau.Count > 0
+            ? BookingService.DanhSachChuyenTau.Max(ct => ct.MaChuyen) + 1
+            : 1;
+
+        var chuyenMoi = new ChuyenTau(maChuyen, gaDi, gaDen, newKhoiHanh, newDenDu);
+
+        for (int i = 1; i <= newSoToa; i++)
+        {
+            var toa = new ToaTau($"{maChuyen}-T{i}", "Ngồi Mềm", 40, 300000);
+            chuyenMoi.ThemToa(toa);
+        }
+
+        BookingService.DanhSachChuyenTau.Add(chuyenMoi);
+        thongKe = BookingService.LayThongKe();
+        message = $"Đã thêm chuyến tàu CT-{maChuyen} thành công!";
+        isSuccess = true;
+
+        // Reset form
+        newGaDi = 0;
+        newGaDen = 0;
+        newKhoiHanh = DateTime.Now.AddHours(2);
+        newDenDu = DateTime.Now.AddHours(10);
+        newSoToa = 3;
+        StateHasChanged();
+    }
+
+    private void XoaChuyenTau(ChuyenTau ct)
+    {
+        BookingService.DanhSachChuyenTau.Remove(ct);
+        thongKe = BookingService.LayThongKe();
+        message = $"Đã xóa chuyến tàu CT-{ct.MaChuyen} thành công!";
+        isSuccess = true;
+        StateHasChanged();
+    }
+
+    // === Cấu Hình Hệ Thống ===
+    private void LuuCauHinhHeThong()
+    {
+        DuyetService.LuuCauHinhHeThong(localCauHinhHT);
+        message = "Đã lưu cấu hình hệ thống thành công!";
+        isSuccess = true;
+        StateHasChanged();
+    }
+
+    // === Quản Lý Tài Khoản ===
+    private string accountMessage = "";
+    private bool accountSuccess = false;
+
+    private void XoaTaiKhoanHK(string taiKhoan)
+    {
+        var (ok, msg) = BookingService.XoaTaiKhoan(taiKhoan);
+        accountMessage = msg;
+        accountSuccess = ok;
+        if (ok) thongKe = BookingService.LayThongKe();
+        StateHasChanged();
+    }
+
+    private void LuuTaiKhoan()
+    {
+        BookingService.SaveAccounts();
+        accountMessage = "Đã lưu tất cả tài khoản vào file thành công!";
+        accountSuccess = true;
+        StateHasChanged();
+    }
+}
+
+<style>
+    .admin-page {
+        background: #f8f9fa;
+        min-height: 100vh;
+    }
+
+    /* Access Denied */
+    .access-denied {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 80vh;
+        padding: 2rem;
+    }
+
+    .denied-card {
+        background: white;
+        border-radius: 16px;
+        padding: 3rem;
+        text-align: center;
+        box-shadow: 0 8px 32px rgba(0, 61, 122, 0.12);
+        max-width: 500px;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    .denied-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .denied-card h1 {
+        color: #dc3545;
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+    }
+
+    .denied-card p {
+        color: #666;
+        font-size: 1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .btn-back {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-back:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Admin Header */
+    .admin-header {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        color: white;
+        padding: 2rem 1rem;
+    }
+
+    .header-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .admin-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.3rem;
+    }
+
+    .admin-header p {
+        opacity: 0.9;
+        font-size: 1rem;
+    }
+
+    .admin-badge {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 0.5rem 1.2rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    /* Stats Section */
+    .stats-section {
+        padding: 2rem 1rem;
+        margin-top: -1rem;
+        position: relative;
+        z-index: 10;
+    }
+
+    .stats-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0, 61, 122, 0.1);
+        display: flex;
+        align-items: center;
+        gap: 1.2rem;
+        transition: all 0.3s ease;
+        border-left: 4px solid transparent;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0, 61, 122, 0.18);
+    }
+
+    .stat-card.blue { border-left-color: #003d7a; }
+    .stat-card.green { border-left-color: #28a745; }
+    .stat-card.orange { border-left-color: #ff9800; }
+    .stat-card.purple { border-left-color: #7b1fa2; }
+
+    .stat-icon {
+        font-size: 2.5rem;
+    }
+
+    .stat-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #003d7a;
+        line-height: 1.2;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Tab Section */
+    .tab-section {
+        padding: 0 1rem 3rem;
+    }
+
+    .tab-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .tab-nav {
+        display: flex;
+        gap: 0.5rem;
+        background: white;
+        padding: 0.5rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.08);
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 0.8rem 1rem;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #666;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        min-width: fit-content;
+        white-space: nowrap;
+    }
+
+    .tab-btn:hover {
+        background: #f0f5ff;
+        color: #003d7a;
+    }
+
+    .tab-btn.active {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+    }
+
+    /* Tab Badge */
+    .tab-badge {
+        background: #dc3545;
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 10px;
+        margin-left: 0.4rem;
+        vertical-align: top;
+    }
+
+    .tab-btn.active .tab-badge {
+        background: rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    /* Tab Content */
+    .tab-content {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 61, 122, 0.08);
+        overflow: hidden;
+        animation: fadeIn 0.3s ease-out;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .table-header h2 {
+        color: #003d7a;
+        font-size: 1.2rem;
+        margin: 0;
+    }
+
+    .record-count {
+        background: #f0f5ff;
+        color: #003d7a;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    /* Table */
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .data-table thead th {
+        background: #f8f9fa;
+        color: #555;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 1rem 1.2rem;
+        text-align: left;
+        border-bottom: 2px solid #e0e0e0;
+        white-space: nowrap;
+    }
+
+    .data-table tbody td {
+        padding: 1rem 1.2rem;
+        border-bottom: 1px solid #f0f0f0;
+        font-size: 0.9rem;
+        color: #333;
+        vertical-align: middle;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .data-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .code-text {
+        font-family: 'Courier New', monospace;
+        background: #f0f5ff;
+        color: #003d7a;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .money {
+        font-weight: 700;
+        color: #003d7a;
+    }
+
+    .money.refund {
+        color: #28a745;
+    }
+
+    .time-cell {
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+        color: #888;
+        white-space: nowrap;
+    }
+
+    .detail-cell {
+        max-width: 300px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Badges */
+    .seat-badge {
+        padding: 0.25rem 0.7rem;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .seat-badge.available {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .seat-badge.full {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .status-badge {
+        padding: 0.25rem 0.8rem;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .status-badge.active {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .status-badge.expired {
+        background: #fff3e0;
+        color: #e65100;
+    }
+
+    .status-badge.pending {
+        background: #fff8e1;
+        color: #f57f17;
+    }
+
+    .status-badge.rejected {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .type-badge {
+        padding: 0.25rem 0.8rem;
+        border-radius: 12px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .type-badge.payment {
+        background: #e3f2fd;
+        color: #1565c0;
+    }
+
+    .type-badge.refund {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .action-badge {
+        background: #f0f5ff;
+        color: #003d7a;
+        padding: 0.3rem 0.8rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        display: block;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        color: #888;
+        font-size: 1rem;
+    }
+
+    /* ========== NEW STYLES ========== */
+
+    /* Alert Messages */
+    .alert-message {
+        padding: 1rem 2rem;
+        margin: 0;
+        font-weight: 600;
+        font-size: 0.9rem;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .alert-message.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .alert-message.error {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-approve {
+        background: linear-gradient(135deg, #28a745 0%, #218838 100%);
+        color: white;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-approve:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-reject {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-reject:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-delete {
+        background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        color: white;
+        border: none;
+        padding: 0.4rem 1rem;
+        border-radius: 6px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-delete:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-save {
+        background: linear-gradient(135deg, #003d7a 0%, #0055aa 100%);
+        color: white;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-save:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(0, 61, 122, 0.3);
+    }
+
+    .btn-delete-small {
+        padding: 0.3rem 0.8rem;
+        border: none;
+        background: #dc3545;
+        color: white;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-delete-small:hover {
+        background: #c82333;
+        transform: scale(1.05);
+    }
+
+    .text-muted {
+        color: #aaa;
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+
+    /* Form Styles */
+    .form-container {
+        padding: 2rem;
+    }
+
+    .form-title {
+        color: #003d7a;
+        font-size: 1.1rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.8rem;
+        border-bottom: 2px solid #f0f5ff;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .form-group {
+        margin-bottom: 1.2rem;
+    }
+
+    .form-group label {
+        display: block;
+        color: #003d7a;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border: 2px solid #e0e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #333;
+        transition: all 0.3s ease;
+        background: #f8fbff;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        border-color: #003d7a;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 61, 122, 0.1);
+        background: white;
+    }
+
+    .form-input-file {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border: 2px dashed #e0e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #333;
+        transition: all 0.3s ease;
+        background: #f8fbff;
+        cursor: pointer;
+    }
+
+    .form-input-file:hover {
+        border-color: #003d7a;
+        background: #f0f5ff;
+    }
+
+    .form-textarea {
+        width: 100%;
+        padding: 0.7rem 1rem;
+        border: 2px solid #e0e8f0;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        color: #333;
+        transition: all 0.3s ease;
+        background: #f8fbff;
+        resize: vertical;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .form-textarea:focus {
+        border-color: #003d7a;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(0, 61, 122, 0.1);
+        background: white;
+    }
+
+    .form-actions {
+        margin-top: 1.5rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #f0f0f0;
+    }
+
+    /* QR Preview */
+    .qr-preview {
+        margin: 1.5rem 0;
+        text-align: center;
+    }
+
+    .qr-preview label {
+        display: block;
+        color: #003d7a;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .qr-image {
+        max-width: 250px;
+        max-height: 250px;
+        border: 3px solid #e0e8f0;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 61, 122, 0.1);
+    }
+
+    /* Responsive */
+    @@media (max-width: 1024px) {
+        .stats-container {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 768px) {
+        .admin-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .header-container {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+
+        .tab-nav {
+            flex-direction: column;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .table-header {
+            flex-direction: column;
+            gap: 0.8rem;
+            align-items: flex-start;
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>

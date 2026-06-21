@@ -1,0 +1,531 @@
+@* NavMenu Component - Thanh điều hướng chính của ứng dụng *@
+@* Sử dụng TrainBookingService để kiểm tra trạng thái đăng nhập *@
+@rendermode InteractiveServer
+@inject ProjectTrainWeb.Services.TrainBookingService BookingService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<header class="train-navbar">
+    <nav class="navbar-container">
+        <div class="navbar-left">
+            <a href="" class="navbar-logo">
+                <span class="logo-icon">🚂</span>
+                <span class="logo-text">ProjectTrain</span>
+            </a>
+        </div>
+
+        <button class="mobile-menu-btn" @onclick="ToggleMobileMenu">
+            <span class="hamburger"></span>
+            <span class="hamburger"></span>
+            <span class="hamburger"></span>
+        </button>
+
+        <div class="navbar-middle @(isMobileMenuOpen ? "active" : "")">
+            <NavLink href="" class="nav-link-item" Match="NavLinkMatch.All">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Trang Chủ</span>
+            </NavLink>
+
+            <NavLink href="search-trains" class="nav-link-item">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-text">Tìm Vé</span>
+            </NavLink>
+
+            <NavLink href="ticket-lookup" class="nav-link-item">
+                <span class="nav-icon">🔎</span>
+                <span class="nav-text">Tra Cứu Vé</span>
+            </NavLink>
+
+            @if (BookingService.DaDangNhap)
+            {
+                <NavLink href="my-tickets" class="nav-link-item">
+                    <span class="nav-icon">🎫</span>
+                    <span class="nav-text">Vé Của Tôi</span>
+                </NavLink>
+
+                <NavLink href="booking-history" class="nav-link-item">
+                    <span class="nav-icon">📑</span>
+                    <span class="nav-text">Lịch Sử Đặt Vé</span>
+                </NavLink>
+
+                <NavLink href="activity-history" class="nav-link-item">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Lịch Sử</span>
+                </NavLink>
+            }
+
+            @if (BookingService.LaQuanTri)
+            {
+                <NavLink href="admin" class="nav-link-item nav-admin">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Quản Trị</span>
+                </NavLink>
+            }
+        </div>
+
+        <div class="navbar-right">
+            @if (BookingService.DaDangNhap)
+            {
+                <!-- Notification Button -->
+                <a href="notifications" class="notification-btn">
+                    <span class="notification-icon">🔔</span>
+                    @if (BookingService.DemThongBaoChuaDoc() > 0)
+                    {
+                        <span class="notification-badge">@BookingService.DemThongBaoChuaDoc()</span>
+                    }
+                </a>
+
+                <!-- User Menu -->
+                <div class="user-menu">
+                    <button class="user-btn" @onclick="ToggleUserMenu">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name">@BookingService.TenHienThi</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    @if (isUserMenuOpen)
+                    {
+                        <div class="user-dropdown active">
+                            <a href="javascript:void(0)" @onclick='() => NavigateAndCloseMenu("/profile")'>
+                                <span>👤</span> Hồ Sơ Cá Nhân
+                            </a>
+                            <a href="javascript:void(0)" @onclick='() => NavigateAndCloseMenu("/my-tickets")'>
+                                <span>🎫</span> Vé Của Tôi
+                            </a>
+                            <a href="javascript:void(0)" @onclick='() => NavigateAndCloseMenu("/activity-history")'>
+                                <span>📋</span> Lịch Sử Hoạt Động
+                            </a>
+                            <a href="javascript:void(0)" @onclick='() => NavigateAndCloseMenu("/notifications")'>
+                                <span>🔔</span> Thông Báo
+                            </a>
+                            @if (BookingService.LaQuanTri)
+                            {
+                                <a href="javascript:void(0)" @onclick='() => NavigateAndCloseMenu("/admin")'>
+                                    <span>⚙️</span> Quản Trị Hệ Thống
+                                </a>
+                            }
+                            <a href="javascript:void(0)" @onclick="HandleDangXuat" class="logout-link">
+                                <span>🚪</span> Đăng Xuất
+                            </a>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <!-- Login / Register Buttons -->
+                <button class="btn-login" @onclick='() => NavigationManager.NavigateTo("/login")'>
+                    <span>👤</span>
+                    <span class="btn-text">Đăng Nhập</span>
+                </button>
+                <button class="btn-register" @onclick='() => NavigationManager.NavigateTo("/register")'>
+                    <span class="btn-text">Đăng Ký</span>
+                </button>
+            }
+        </div>
+    </nav>
+</header>
+
+@code {
+    private bool isMobileMenuOpen = false;
+    private bool isUserMenuOpen = false;
+
+    protected override void OnInitialized()
+    {
+        BookingService.OnStateChanged += StateChanged;
+    }
+
+    private void StateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleMobileMenu()
+    {
+        isMobileMenuOpen = !isMobileMenuOpen;
+    }
+
+    private void ToggleUserMenu()
+    {
+        isUserMenuOpen = !isUserMenuOpen;
+    }
+
+    private void HandleDangXuat()
+    {
+        BookingService.DangXuat();
+        isUserMenuOpen = false;
+        NavigationManager.NavigateTo("/");
+    }
+
+    private void NavigateAndCloseMenu(string url)
+    {
+        isUserMenuOpen = false;
+        NavigationManager.NavigateTo(url);
+    }
+
+    public void Dispose()
+    {
+        BookingService.OnStateChanged -= StateChanged;
+    }
+}
+
+<style>
+    /* Navbar Styles */
+    .train-navbar {
+        background: linear-gradient(135deg, #003d7a 0%, #005fa3 100%);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+
+    .navbar-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 70px;
+    }
+
+    /* Logo */
+    .navbar-left {
+        flex-shrink: 0;
+    }
+
+    .navbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        text-decoration: none;
+        color: white;
+        font-weight: 700;
+        font-size: 1.4rem;
+        transition: transform 0.3s ease;
+    }
+
+    .navbar-logo:hover {
+        transform: scale(1.05);
+    }
+
+    .logo-icon {
+        font-size: 1.8rem;
+    }
+
+    .logo-text {
+        display: none;
+    }
+
+    @@media (min-width: 768px) {
+        .logo-text {
+            display: inline;
+            font-size: 1.3rem;
+        }
+    }
+
+    /* Middle Navigation */
+    .navbar-middle {
+        display: flex;
+        gap: 0;
+        flex: 1;
+        margin: 0 2rem;
+        justify-content: center;
+    }
+
+    .nav-link-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: white;
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .nav-link-item:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .nav-link-item.active {
+        background-color: rgba(255, 255, 255, 0.3);
+        border-bottom: 3px solid #ffc107;
+    }
+
+    .nav-admin {
+        color: #ffc107;
+    }
+
+    .nav-icon {
+        font-size: 1.1rem;
+    }
+
+    .nav-text {
+        display: none;
+    }
+
+    @@media (min-width: 992px) {
+        .nav-text {
+            display: inline;
+            font-size: 0.9rem;
+        }
+    }
+
+    @@media (max-width: 992px) {
+        .navbar-middle {
+            display: none;
+            position: absolute;
+            top: 70px;
+            left: 0;
+            right: 0;
+            background: rgba(0, 61, 122, 0.98);
+            flex-direction: column;
+            gap: 0;
+            margin: 0;
+            padding: 1rem 0;
+            width: 100%;
+            z-index: 999;
+        }
+
+        .navbar-middle.active {
+            display: flex;
+        }
+
+        .nav-link-item {
+            padding: 1rem;
+            border-radius: 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            justify-content: flex-start;
+        }
+
+        .nav-text {
+            display: inline;
+        }
+    }
+
+    /* Right Section */
+    .navbar-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-shrink: 0;
+    }
+
+    /* Auth Buttons */
+    .btn-login, .btn-register {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.85rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        white-space: nowrap;
+    }
+
+    .btn-login {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+    }
+
+    .btn-login:hover {
+        background: rgba(255, 255, 255, 0.25);
+        color: white;
+    }
+
+    .btn-register {
+        background: #ffc107;
+        color: #003d7a;
+        border: none;
+    }
+
+    .btn-register:hover {
+        background: #ffca2c;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+    }
+
+    /* Notification */
+    .notification-btn {
+        position: relative;
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        font-size: 1.5rem;
+        transition: transform 0.3s ease;
+        padding: 0.5rem;
+        text-decoration: none;
+    }
+
+    .notification-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .notification-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        background: #ff4444;
+        color: white;
+        font-size: 0.65rem;
+        padding: 2px 5px;
+        border-radius: 50%;
+        font-weight: bold;
+        min-width: 16px;
+        text-align: center;
+    }
+
+    /* User Menu */
+    .user-menu {
+        position: relative;
+    }
+
+    .user-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.5rem 0.8rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .user-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+    }
+
+    .user-avatar {
+        font-size: 1.2rem;
+    }
+
+    .user-name {
+        display: none;
+        max-width: 120px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .dropdown-arrow {
+        font-size: 0.6rem;
+        transition: transform 0.3s ease;
+    }
+
+    @@media (min-width: 768px) {
+        .user-name {
+            display: inline;
+        }
+    }
+
+    .user-dropdown {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+        margin-top: 0.5rem;
+        overflow: hidden;
+        min-width: 220px;
+        z-index: 1000;
+    }
+
+    .user-dropdown.active {
+        display: block;
+        animation: slideDown 0.2s ease-out;
+    }
+
+    @@keyframes slideDown {
+        from { opacity: 0; transform: translateY(-8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-dropdown a {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.8rem 1.2rem;
+        color: #333;
+        text-decoration: none;
+        border-bottom: 1px solid #f0f0f0;
+        transition: background 0.2s ease;
+        font-size: 0.9rem;
+    }
+
+    .user-dropdown a:last-child {
+        border-bottom: none;
+    }
+
+    .user-dropdown a:hover {
+        background: #f5f5f5;
+        color: #003d7a;
+    }
+
+    .logout-link:hover {
+        background: #fff0f0 !important;
+        color: #dc3545 !important;
+    }
+
+    /* Mobile Menu Button */
+    .mobile-menu-btn {
+        display: none;
+        flex-direction: column;
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        gap: 5px;
+        padding: 0.5rem;
+    }
+
+    @@media (max-width: 992px) {
+        .mobile-menu-btn {
+            display: flex;
+        }
+
+        .navbar-container {
+            flex-wrap: wrap;
+        }
+    }
+
+    .hamburger {
+        width: 25px;
+        height: 3px;
+        background: white;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+
+    /* Responsive */
+    @@media (max-width: 480px) {
+        .navbar-container {
+            padding: 0 0.5rem;
+        }
+
+        .navbar-right {
+            gap: 0.5rem;
+        }
+
+        .notification-btn {
+            font-size: 1.2rem;
+        }
+
+        .btn-text {
+            display: none;
+        }
+    }
+</style>
